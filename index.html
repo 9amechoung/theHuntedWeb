@@ -124,9 +124,9 @@ button.trow:hover{background:var(--slate-soft)}
 .prog:first-child{border-top:0}
 .meter{grid-column:1/-1;height:10px;border:1.5px solid var(--ink);background:var(--panel);position:relative;overflow:hidden}
 .meter i{position:absolute;inset:0 auto 0 0;background:var(--c)}
-.crew{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));overflow:hidden}
-.crew-t{padding:12px 14px;min-width:0;box-shadow:1.5px 0 0 var(--ink),0 1.5px 0 var(--ink)}
-.crew-t.wide{grid-column:span 2}
+.crew{display:flex;flex-wrap:wrap;overflow:hidden}
+.crew-t{flex:1 1 200px;padding:12px 14px;min-width:0;box-shadow:1.5px 0 0 var(--ink),0 1.5px 0 var(--ink)}
+.crew-t.wide{flex:2.4 1 440px}
 .crew-h{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
 .crew-h b{font-family:var(--f-mono);font-size:22px;line-height:1;color:var(--c)}
 .crew-h .tchip{align-self:center}
@@ -414,8 +414,7 @@ button.trow:hover{background:var(--slate-soft)}
 
 @media (max-width:860px){
   .ov{grid-template-columns:minmax(0,1fr)}
-  .crew{grid-template-columns:minmax(0,1fr)}
-  .crew-t.wide{grid-column:auto}
+  .crew-t,.crew-t.wide{flex-basis:100%}
   .calwrap{grid-template-columns:minmax(0,1fr)}
   .calside{position:static}
   .kb{grid-template-columns:minmax(0,1fr)}
@@ -537,20 +536,24 @@ const COLS = ['projects','tasks','milestones','events','reports','art','bible','
 /* 팀 목록은 settings/team 문서의 teams에 저장 (팀원 명단 창에서 편집). 없으면 기본 3팀 */
 const TEAM_DEFAULT = [{name:'아트팀', color:'var(--green)'}, {name:'프밍팀', color:'var(--blue)'}, {name:'기획팀', color:'var(--violet)'}];
 const TEAM_PAL = ['var(--green)','var(--blue)','var(--violet)','var(--amber)','var(--red)','#0f9aa6','#d0457f','#6b7385','#c68a14','#2f87d0'];
-const TEAM_NAME_OK = s => /^[^<>"'&/,\n]{1,20}$/.test(s) && s !== '공통';
+const TEAM_NAME_OK = s => /^[^<>"'&/,\n]{1,20}$/.test(s);
+const COMMON = '공통';   // = 모든 팀. 사람이 속하는 팀이 아니라 할 일 · 일정 · 보고에 붙이는 표시
+const TEAM_NAME_FREE = s => TEAM_NAME_OK(s) && s !== COMMON;
+const teamHit = (team, f) => !f || team === f || team === COMMON;   // 팀으로 걸러도 공통은 같이 보임
 const TEAM_COLOR_OK = c => /^#[0-9a-f]{3,8}$/i.test(c || '') || /^var\(--[a-z-]+\)$/.test(c || '');
 const TEAMS = [];
 const TEAM_C = {};
-const teamOpts = () => TEAMS.map(t => [t, t]);
+const teamOpts = () => TEAMS.map(t => [t, t]);          // 사람의 팀 (공통 없음)
+const workTeamOpts = () => REP_TEAMS.map(t => [t, t]);  // 할 일 · 일정 · 보고의 팀 (공통 포함)
 const REP_TEAMS = [];
 function applyTeams(list){
-  const ok = Array.isArray(list) ? list.filter(t => t && typeof t.name === 'string' && TEAM_NAME_OK(t.name)) : [];
+  const ok = Array.isArray(list) ? list.filter(t => t && typeof t.name === 'string' && TEAM_NAME_FREE(t.name)) : [];
   const use = ok.length ? ok : TEAM_DEFAULT;
   TEAMS.splice(0, TEAMS.length, ...use.map(t => t.name));
   Object.keys(TEAM_C).forEach(k => delete TEAM_C[k]);
   use.forEach((t, i) => { TEAM_C[t.name] = TEAM_COLOR_OK(t.color) ? t.color : TEAM_PAL[i % TEAM_PAL.length]; });
-  TEAM_C['공통'] = 'var(--slate)';
-  REP_TEAMS.splice(0, REP_TEAMS.length, ...TEAMS, '공통');
+  TEAM_C[COMMON] = 'var(--slate)';
+  REP_TEAMS.splice(0, REP_TEAMS.length, ...TEAMS, COMMON);
 }
 applyTeams(null);
 const tchip = t => REP_TEAMS.includes(t) ? `<span class="tchip" style="--c:${TEAM_C[t]}">${t}</span>` : '';
@@ -987,7 +990,7 @@ V.calendar = () => {
 
 V.kanban = () => {
   const f = S.kb;
-  const ts = S.d.tasks.filter(t => (!f.project || (f.project === '_none' ? !proj(t.projectId) : t.projectId === f.project)) && (!f.who || t.assignee === f.who) && (!f.team || t.team === f.team));
+  const ts = S.d.tasks.filter(t => (!f.project || (f.project === '_none' ? !proj(t.projectId) : t.projectId === f.project)) && (!f.who || t.assignee === f.who) && teamHit(t.team, f.team));
   const col = st => {
     const list = ts.filter(t => (t.status || 'todo') === st).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999') || (a.createdAt||0) - (b.createdAt||0));
     return `<section class="kcol" data-drop="${st}"><div class="ph"><h2>${STATUS[st]}</h2><span class="cnt">${list.length}</span></div><div class="klist">${list.length ? list.map(t => `
@@ -1015,7 +1018,7 @@ V.kanban = () => {
     <span class="flab">팀</span>
     <div class="chips" role="group" aria-label="팀">
       <button type="button" class="chip" data-act="kb-set" data-key="team" data-val="" aria-pressed="${!f.team}">전체</button>
-      ${TEAMS.map(t => `<button type="button" class="chip dot" style="--c:${TEAM_C[t]}" data-act="kb-set" data-key="team" data-val="${t}" aria-pressed="${f.team === t}">${t}</button>`).join('')}
+      ${REP_TEAMS.map(t => `<button type="button" class="chip dot" style="--c:${TEAM_C[t]}" data-act="kb-set" data-key="team" data-val="${t}" aria-pressed="${f.team === t}">${t}</button>`).join('')}
     </div>
   </div>
   <div class="kb">${col('todo')}${col('doing')}${col('done')}</div>
@@ -1051,7 +1054,7 @@ V.timeline = () => {
     const end = isDate(e.end) && e.end > e.date ? e.end : e.date;
     items.push({act:'edit-event', id:e.id, title:e.title, lo:e.date, hi:end, team:e.team, by:e.by, status:'ev', c: TEAM_C[e.team] || 'var(--slate)'});
   });
-  const shown = items.filter(x => (!f.team || x.team === f.team) && !(f.hideDone && x.status === 'done'));
+  const shown = items.filter(x => teamHit(x.team, f.team) && !(f.hideDone && x.status === 'done'));
   const inRange = shown.filter(x => x.hi >= s0 && x.lo <= s1).sort((a, b) => a.lo.localeCompare(b.lo) || a.hi.localeCompare(b.hi));
   const before = shown.filter(x => x.hi < s0).length, after = shown.filter(x => x.lo > s1).length;
   const bars = inRange.map((x, i) => {
@@ -1060,7 +1063,7 @@ V.timeline = () => {
     const who = x.by ? ` · ${x.by}${x.team ? ' ' + x.team : ''}` : (x.team ? ' · ' + x.team : '');
     return `<button type="button" class="tb ${cls}" style="--c:${esc(x.c)};left:${L * W + 2}px;top:${i * RH + 6}px;width:${(R - L + 1) * W - 4}px" data-act="${x.act}" data-id="${esc(x.id)}" title="${esc(x.title)} · ${range(x.lo, x.hi)}${esc(who)}"><b>${esc(x.title)}</b><small>${range(x.lo, x.hi)}${esc(who)}</small></button>`;
   }).join('');
-  const undated = S.d.tasks.filter(x => !isDate(x.start) && !isDate(x.due) && (!f.team || x.team === f.team));
+  const undated = S.d.tasks.filter(x => !isDate(x.start) && !isDate(x.due) && teamHit(x.team, f.team));
   const s = parse(s0), e = parse(s1);
   return `
   <div class="bar">
@@ -1072,10 +1075,10 @@ V.timeline = () => {
     ${addBtn('new-task', '+ 할 일')}
   </div>
   <div class="bar">
-    <div class="chips" role="group" aria-label="팀"><button type="button" class="chip" data-act="tl-team" data-team="" aria-pressed="${!f.team}">전체</button>${TEAMS.map(tm => `<button type="button" class="chip" data-act="tl-team" data-team="${tm}" aria-pressed="${f.team === tm}">${tm}</button>`).join('')}</div>
+    <div class="chips" role="group" aria-label="팀"><button type="button" class="chip" data-act="tl-team" data-team="" aria-pressed="${!f.team}">전체</button>${REP_TEAMS.map(tm => `<button type="button" class="chip" data-act="tl-team" data-team="${tm}" aria-pressed="${f.team === tm}">${tm}</button>`).join('')}</div>
     <button type="button" class="chip" data-act="tl-done" aria-pressed="${f.hideDone}">완료 숨기기</button>
     <span class="sp"></span>
-    <div class="glegend">${TEAMS.map(tm => `<span><i style="border-color:${TEAM_C[tm]};background:color-mix(in srgb,${TEAM_C[tm]} 24%,var(--panel))"></i>${tm}</span>`).join('')}<span><i class="l-doing"></i>진행 중</span><span><i class="l-done"></i>완료</span><span><i class="l-ev"></i>일정</span></div>
+    <div class="glegend">${REP_TEAMS.map(tm => `<span><i style="border-color:${TEAM_C[tm]};background:color-mix(in srgb,${TEAM_C[tm]} 24%,var(--panel))"></i>${tm}</span>`).join('')}<span><i class="l-doing"></i>진행 중</span><span><i class="l-done"></i>완료</span><span><i class="l-ev"></i>일정</span></div>
   </div>
   <div class="twrap"><div class="tl-in" style="--tw:${tw}px;--w:${W}px">
     <div class="tl-head">${head}</div>
@@ -1135,7 +1138,7 @@ V.art = () => {
 
 V.reports = () => {
   const f = S.rep;
-  const list = S.d.reports.filter(r => (!f.who || r.member === f.who) && (!f.project || (f.project === '_none' ? !proj(r.projectId) : r.projectId === f.project)) && (!f.team || r.team === f.team))
+  const list = S.d.reports.filter(r => (!f.who || r.member === f.who) && (!f.project || (f.project === '_none' ? !proj(r.projectId) : r.projectId === f.project)) && teamHit(r.team, f.team))
     .sort((a, b) => String(b.date).localeCompare(String(a.date)) || (b.createdAt||0) - (a.createdAt||0));
   const byDate = [];
   list.forEach(r => { const last = byDate[byDate.length - 1]; if (last && last.date === r.date) last.items.push(r); else byDate.push({date: r.date, items: [r]}); });
@@ -1251,10 +1254,10 @@ modal.addEventListener('click', e => { if (e.target === modal || e.target.closes
 const projOpts = (none = '프로젝트 없음') => [['', none], ...projsSorted().map(p => [p.id, p.name])];
 const authorFields = () => [
   {key:'by', label:'입력한 사람', list: memberNames(), required:true, ph:'이름'},
-  {key:'team', label:'팀', type:'select', options: teamOpts()}
+  {key:'team', label:'팀', type:'select', options: workTeamOpts(), hint:'공통 = 모든 팀'}
 ];
 const authorVals = x => x && x.by
-  ? {by: x.by, team: TEAMS.includes(x.team) ? x.team : (rosterTeam(x.by) || TEAMS[0])}
+  ? {by: x.by, team: REP_TEAMS.includes(x.team) ? x.team : (rosterTeam(x.by) || TEAMS[0])}
   : {by: me ? me.name : '', team: me ? me.team : TEAMS[0]};
 function needMe(fn){
   if (!guard()) return;
@@ -1449,10 +1452,10 @@ function artForm(files, x){
       {key:'category', label:'분류', type:'select', options: ART_CATS.map(c => [c, c])},
       {key:'version', label:'버전', ph:'v01'},
       {key:'member', label:'올린 사람', list: memberNames(), required:true},
-      {key:'team', label:'팀', type:'select', options: teamOpts()},
+      {key:'team', label:'팀', type:'select', options: workTeamOpts()},
       {key:'note', label:'설명', type:'textarea', ph:'무엇을 참고했는지, 피드백 받을 점'}
     ],
-    values: x ? {...x, team: TEAMS.includes(x.team) ? x.team : (rosterTeam(x.member) || (me ? me.team : TEAMS[0])), member: x.member || (me ? me.name : '')} : {title: files && files[0] ? files[0].name.replace(/\.[^.]+$/, '') : '', category:'배경', member: me ? me.name : '', team: me ? me.team : TEAMS[0]},
+    values: x ? {...x, team: REP_TEAMS.includes(x.team) ? x.team : (rosterTeam(x.member) || (me ? me.team : TEAMS[0])), member: x.member || (me ? me.name : '')} : {title: files && files[0] ? files[0].name.replace(/\.[^.]+$/, '') : '', category:'배경', member: me ? me.name : '', team: me ? me.team : TEAMS[0]},
     saveLabel: x ? '저장' : '올리기',
     onSave: async v => {
       if (x) {
@@ -1479,8 +1482,9 @@ async function saveTeamDoc(members, teams){
 }
 function parseTeamNames(text){
   const names = [...new Set(text.split(/[,\n]/).map(s => s.trim()).filter(Boolean))];
+  if (names.includes(COMMON)) throw new Error('"공통"은 모든 팀을 뜻해서 따로 만들 수 없어요. 할 일 · 일정에서 팀을 "공통"으로 고르면 돼요.');
   const bad = names.find(n => !TEAM_NAME_OK(n));
-  if (bad) throw new Error(`팀 이름 "${bad}"은(는) 쓸 수 없어요. 20자 이하로, / , < > " ' & 없이 적어 주세요. "공통"도 쓸 수 없어요.`);
+  if (bad) throw new Error(`팀 이름 "${bad}"은(는) 쓸 수 없어요. 20자 이하로, / , < > " ' & 없이 적어 주세요.`);
   if (!names.length) throw new Error('팀을 하나 이상 적어 주세요.');
   if (names.length > 12) throw new Error('팀은 12개까지 만들 수 있어요.');
   return names;
