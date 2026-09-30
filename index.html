@@ -710,6 +710,72 @@ function blobSrc(id, full){
   return full && blobCache.has('t:' + id) ? blobCache.get('t:' + id) : PIXEL;
 }
 const blobAttr = (id, full) => `src="${blobSrc(id, full)}" data-blob="${esc((full ? 'f:' : 't:') + id)}"`;
+/* 이미지 다운로드: 한 장은 바로, 여러 장은 zip으로 묶어서 */
+const safeName = s => String(s || '').replace(/[\\/:*?"<>|\r\n\t]+/g, '_').replace(/\s+/g, ' ').trim().slice(0, 80) || 'image';
+const extOf = url => ((/^data:image\/([a-z0-9+]+)/i.exec(url || '') || [])[1] || 'webp').replace('jpeg', 'jpg').replace('svg+xml', 'svg');
+const artFileBase = x => [x.category, x.title, x.version].filter(Boolean).join('_');
+async function fullSrc(id){
+  const k = 'f:' + id;
+  if (blobCache.has(k)) return blobCache.get(k);
+  const u = await assets.get(id, false);
+  if (u) blobCache.set(k, u);
+  return u;
+}
+function saveUrl(url, name){
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.rel = 'noopener';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+async function downloadOne(id, base, btn){
+  if (!assets) return toast('저장소에 연결되지 않았어요.');
+  if (btn) btn.disabled = true;
+  try {
+    const u = await fullSrc(id);
+    if (!u) throw new Error();
+    saveUrl(u, `${safeName(base)}.${extOf(u)}`);
+  } catch { toast('이미지를 받지 못했어요. 잠시 후 다시 해 주세요.'); }
+  finally { if (btn) btn.disabled = false; }
+}
+let zipLib = null, zipBusy = false;
+function loadZip(){
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  return zipLib = zipLib || new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = () => res(window.JSZip);
+    s.onerror = () => { zipLib = null; rej(new Error('압축 도구를 불러오지 못했어요. 인터넷 연결을 확인해 주세요.')); };
+    document.head.appendChild(s);
+  });
+}
+async function downloadZip(list, label){
+  if (!assets || zipBusy || !list.length) return;
+  zipBusy = true; render();
+  let ok = 0, fail = 0;
+  try {
+    const JSZip = await loadZip();
+    const zip = new JSZip(), used = new Map();
+    for (const x of list) {
+      toast(`이미지 모으는 중… ${ok + fail + 1}/${list.length}`);
+      try {
+        const u = await fullSrc(x.assetId);
+        if (!u) throw new Error();
+        let base = safeName(artFileBase(x));
+        const n = used.get(base) || 0; used.set(base, n + 1);
+        if (n) base += ` (${n + 1})`;
+        zip.file(`${base}.${extOf(u)}`, u.slice(u.indexOf(',') + 1), {base64: true});
+        ok++;
+      } catch { fail++; }
+    }
+    if (!ok) throw new Error('받을 수 있는 이미지가 없어요.');
+    toast('zip 파일 만드는 중…');
+    const blob = await zip.generateAsync({type: 'blob', compression: 'STORE'});
+    const url = URL.createObjectURL(blob);
+    saveUrl(url, `HUNTED_아트바이블_${safeName(label)}_${today()}.zip`);
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    toast(fail ? `${ok}장을 받았고 ${fail}장은 받지 못했어요.` : `${ok}장을 zip으로 받았어요.`);
+  } catch (x) { toast(x.message || '다운로드하지 못했어요.'); }
+  finally { zipBusy = false; render(); }
+}
 async function dropAssets(ids){
   if (!assets) return;
   for (const id of ids) { try { await assets.delete(id); } catch {} }
@@ -1177,7 +1243,7 @@ V.art = () => {
       ${s.by ? `<span class="byline">입력 ${esc(byText(s))}</span>` : ''}
       ${(s.colors || []).length ? `<div class="sw">${s.colors.filter(c => /^#[0-9a-f]{3,8}$/i.test(c)).map(c => `<figure><i style="--sw:${c}"></i><figcaption>${esc(c)}</figcaption></figure>`).join('')}</div>` : ''}
     </article>`).join('') : `<div class="panel">${emptyMsg('bible', '설정 항목이 없어요. 그래픽 컨셉, 색 규칙, 캐릭터 설정 같은 기준을 <b>+ 설정 항목</b>으로 적어 두세요.')}</div>`}</section>
-  <div class="bar"><h2 class="vtitle" style="font-size:22px">컨셉 이미지</h2><span class="muted num">${S.d.art.length}장</span></div>
+  <div class="bar"><h2 class="vtitle" style="font-size:22px">컨셉 이미지</h2><span class="muted num">${S.d.art.length}장</span><span class="sp"></span>${imgs.length && assets && !selOn() ? `<button type="button" class="ghost" data-act="art-zip" ${zipBusy ? 'disabled' : ''}>${zipBusy ? '묶는 중…' : `⭳ ${cat ? esc(cat) + ' ' : '전체 '}${imgs.length}장 한 번에 받기`}</button>` : ''}</div>
   <div class="chips" role="group" aria-label="분류"><button type="button" class="chip" data-act="art-cat" data-cat="" aria-pressed="${!cat}">전체<span class="n">${S.d.art.length}</span></button>${ART_CATS.map(c => `<button type="button" class="chip" data-act="art-cat" data-cat="${c}" aria-pressed="${cat === c}">${c}<span class="n">${counts[c]}</span></button>`).join('')}</div>
   ${imgs.length ? `<div class="gal">${imgs.map(x => `<button type="button" class="shot${picked('art:' + x.id)}" data-act="view-art" data-id="${esc(x.id)}"${selAttr('art:' + x.id)}>
       <span class="im"><img ${blobAttr(x.assetId)} alt="${esc(x.title)}"></span>
@@ -1756,12 +1822,14 @@ const lb = $('#lightbox');
 function openLightbox(blobId, cap, art){
   lb.innerHTML = `<div class="lb-in" role="dialog" aria-modal="true" aria-label="이미지 보기">
     <img ${blobAttr(blobId, true)} alt="${esc(cap)}">
-    <div class="lb-cap"><span class="t">${esc(cap)}</span>${art ? `<span class="muted">${esc(art.category || '')}${art.version ? ' · ' + esc(art.version) : ''}${art.member ? ' · ' + esc(art.member) : ''}</span>` : ''}<span style="flex:1"></span>${art && canWrite ? `<button type="button" class="ghost" data-lb-edit="${esc(art.id)}">정보 편집</button>` : ''}<button type="button" class="ghost" data-lb-close>닫기</button>${art && art.note ? `<span class="n">${esc(art.note)}</span>` : ''}</div>
+    <div class="lb-cap"><span class="t">${esc(cap)}</span>${art ? `<span class="muted">${esc(art.category || '')}${art.version ? ' · ' + esc(art.version) : ''}${art.member ? ' · ' + esc(art.member) : ''}</span>` : ''}<span style="flex:1"></span>${assets ? `<button type="button" class="ghost" data-lb-dl="${esc(blobId)}" data-name="${esc(art ? artFileBase(art) : cap)}">⭳ 다운로드</button>` : ''}${art && canWrite ? `<button type="button" class="ghost" data-lb-edit="${esc(art.id)}">정보 편집</button>` : ''}<button type="button" class="ghost" data-lb-close>닫기</button>${art && art.note ? `<span class="n">${esc(art.note)}</span>` : ''}</div>
   </div>`;
   lb.hidden = false;
   $('[data-lb-close]', lb).focus();
 }
 lb.addEventListener('click', e => {
+  const dl = e.target.closest('[data-lb-dl]');
+  if (dl) { downloadOne(dl.dataset.lbDl, dl.dataset.name, dl); return; }
   const ed = e.target.closest('[data-lb-edit]');
   if (ed) { lb.hidden = true; artForm(null, S.d.art.find(a => a.id === ed.dataset.lbEdit)); return; }
   if (e.target === lb || e.target.closest('[data-lb-close]') || e.target.closest('.lb-in') === null) lb.hidden = true;
@@ -1826,6 +1894,11 @@ main.addEventListener('click', e => {
     case 'team-roster': return teamForm();
     case 'team-add': return addTeamForm();
     case 'kinds-edit': return kindsForm();
+    case 'art-zip': {
+      const c = S.art.cat;
+      const list = S.d.art.filter(x => x.assetId && (!c || x.category === c)).sort((a, b) => (b.createdAt||0) - (a.createdAt||0));
+      return downloadZip(list, c || '전체');
+    }
     case 'relogin': return $('#outBtn').click();
     case 'view-art': { const a = byId('art', id); if (a) openLightbox(a.assetId, a.title, a); return; }
     case 'view-img': return openLightbox(el.dataset.src, el.dataset.cap);
