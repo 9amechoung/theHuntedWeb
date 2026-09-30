@@ -191,7 +191,6 @@ button.trow:hover{background:var(--slate-soft)}
 .legend .lg-tk::before{display:none}
 .more{font-size:11.5px;border:0;background:none;color:var(--ink-2);text-align:left;padding:0 5px}
 .more:hover{text-decoration:underline}
-.kmeet{--k:var(--blue)} .kdue{--k:var(--red)} .kshow{--k:var(--amber)} .kfb{--k:var(--green)} .ketc{--k:var(--slate)}
 .week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:var(--frame);background:var(--panel)}
 .wcol{border-right:1px solid var(--rule);min-height:320px;display:flex;flex-direction:column;min-width:0}
 .wcol:last-child{border-right:0}
@@ -417,6 +416,13 @@ button.trow:hover{background:var(--slate-soft)}
 .rtable select option{color:var(--ink);font-weight:400}
 .rtable td .rx{width:30px;height:30px;padding:0}
 .radd-row{align-self:flex-start;border-style:dashed}
+.evview{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 16px;margin:0;padding:16px}
+.evview dt{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink-2);padding-top:2px}
+.evview dd{margin:0}
+.evview .body{white-space:pre-wrap;overflow-wrap:anywhere}
+.ktable{min-width:0}
+.ktable th:nth-child(1){width:64px} .ktable th:nth-child(2){width:auto} .ktable th:nth-child(3){width:80px}
+.ktable .kcolor{width:44px;height:30px;padding:2px;border:1.5px solid var(--ink);cursor:pointer}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .done-btn{border-color:var(--green);color:var(--green)}
 .done-btn:hover{background:var(--green-soft)}
@@ -549,8 +555,26 @@ const store = {
 
 const STATUS = {todo:'할 일', doing:'진행 중', done:'완료'};
 const PRI = {high:'높음', mid:'보통', low:'낮음'};
-const KINDS = [['meet','회의'],['due','마감'],['show','발표'],['fb','피드백'],['etc','기타']];
-const KIND = Object.fromEntries(KINDS);
+/* 일정 · 할 일 종류: settings/kinds 문서의 list (관리자만 편집). 없으면 기본 5종 */
+const KIND_DEFAULT = [
+  {id:'meet', name:'회의', color:'#2f87d0'}, {id:'due', name:'마감', color:'#cf3b27'}, {id:'show', name:'발표', color:'#b87a0c'},
+  {id:'fb', name:'피드백', color:'#23804f'}, {id:'etc', name:'기타', color:'#5d6678'}
+];
+const KIND_GRAY = '#5d6678';
+const KINDS = [];   // [[id, 이름], ...] (select 옵션 모양)
+const KIND = {};    // id → 이름
+const KIND_C = {};  // id → 색
+function applyKinds(list){
+  const ok = Array.isArray(list) ? list.filter(k => k && /^[a-z0-9_-]{1,24}$/i.test(k.id || '') && typeof k.name === 'string' && TEAM_NAME_OK(k.name)) : [];
+  const use = ok.length ? ok : KIND_DEFAULT;
+  KINDS.splice(0, KINDS.length, ...use.map(k => [k.id, k.name]));
+  [KIND, KIND_C].forEach(o => Object.keys(o).forEach(key => delete o[key]));
+  use.forEach(k => { KIND[k.id] = k.name; KIND_C[k.id] = /^#[0-9a-f]{6}$/i.test(k.color || '') ? k.color : KIND_GRAY; });
+}
+applyKinds(null);
+const kindC = id => KIND_C[id] || KIND_GRAY;
+const kindName = id => KIND[id] || '기타';
+const kindPill = id => `<span class="st kst" style="--k:${kindC(id)}">${esc(kindName(id))}</span>`;
 const ART_CATS = ['캐릭터','몬스터','배경','건물','무기','오브젝트','UI','레퍼런스'];
 const PALETTE = ['#2f87d0','#cf3b27','#23804f','#c68a14','#7c5cd6','#0f9aa6','#d0457f','#6b7385'];
 const IMG_TYPES = ['image/png','image/jpeg','image/gif','image/webp'];
@@ -841,7 +865,7 @@ V.overview = () => {
     <section class="panel"><div class="ph"><h2>진행 중</h2><span class="cnt">${doing.length}</span></div>
       <div class="rows">${doing.length ? doing.map(trow).join('') : emptyMsg('tasks', '진행 중인 할 일이 없어요. 칸반에서 카드를 <b>진행 중</b>으로 옮겨 보세요.')}</div></section>
     <section class="panel"><div class="ph"><h2>다가오는 일정</h2><span class="cnt">14일</span><span class="sp"></span><button type="button" class="linkbtn" data-view="calendar">캘린더</button></div>
-      <div class="rows">${ups.length ? ups.map(u => `<button type="button" class="up" data-act="${u.act}" data-id="${esc(u.id)}"><span class="d">${short(u.date)} ${DOW[parse(u.date).getDay()]}</span><span class="tt">${u.ms ? '◆ ' : ''}${esc(u.title)}</span>${u.ms ? pchip(u.p) : `<span class="st">${esc(KIND[u.k] || '기타')}</span>`}</button>`).join('') : emptyMsg('events', '14일 안에 잡힌 일정이 없어요.')}</div></section>
+      <div class="rows">${ups.length ? ups.map(u => `<button type="button" class="up" data-act="${u.act}" data-id="${esc(u.id)}"><span class="d">${short(u.date)} ${DOW[parse(u.date).getDay()]}</span><span class="tt">${u.ms ? '◆ ' : ''}${esc(u.title)}</span>${u.ms ? pchip(u.p) : kindPill(u.k)}</button>`).join('') : emptyMsg('events', '14일 안에 잡힌 일정이 없어요.')}</div></section>
     <section class="panel"><div class="ph"><h2>프로젝트 진행률</h2><span class="sp"></span><button type="button" class="linkbtn" data-view="todo">할 일 목록</button></div>
       <div>${groups || emptyMsg('projects', '프로젝트가 없어요. <b>할 일</b> 화면에서 프로젝트를 추가해 주세요.')}</div></section>
     <section class="panel full"><div class="ph"><h2>최근 작업 보고</h2><span class="sp"></span><button type="button" class="linkbtn" data-view="reports">전체 보기</button></div>
@@ -858,7 +882,7 @@ function monthDue(month){
   S.d.events.forEach(e => {
     if (!isDate(e.date)) return;
     const end = isDate(e.end) && e.end > e.date ? e.end : e.date;
-    if (inM(end) || inM(e.date)) rows.push({d: inM(end) ? end : e.date, kind: `<span class="st k${esc(e.kind || 'etc')} kst">${esc(KIND[e.kind] || '기타')}</span>`, title: e.title, act: 'edit-event', id: e.id, done: end < t, p: null, team: e.team, by: e.by, sub: end !== e.date ? `${short(e.date)}부터` : (e.time || '')});
+    if (inM(end) || inM(e.date)) rows.push({d: inM(end) ? end : e.date, kind: kindPill(e.kind), title: e.title, act: 'edit-event', id: e.id, done: end < t, p: null, team: e.team, by: e.by, sub: end !== e.date ? `${short(e.date)}부터` : (e.time || '')});
   });
   S.d.milestones.forEach(ms => { if (inM(ms.date)) rows.push({d: ms.date, kind: '<span class="st">◆ 마일스톤</span>', title: ms.title, act: 'edit-ms', id: ms.id, done: ms.date < t, p: proj(ms.projectId), team: ms.team, by: ms.by, sub: ''}); });
   rows.sort((a, b) => a.d.localeCompare(b.d));
@@ -899,7 +923,7 @@ const taskSpan = t => {
 };
 const tkMark = t => `<span class="ck" aria-hidden="true">${t.status === 'done' ? '☑' : '☐'}</span>`;
 const tkCls = t => `tk ${t.status === 'done' ? 'fin' : t.status === 'doing' ? 'doing' : ''}`;
-const tkColor = t => { const p = proj(t.projectId); return esc(p ? p.color : 'var(--slate)'); };
+const tkColor = t => { if (t.kind && KIND_C[t.kind]) return KIND_C[t.kind]; const p = proj(t.projectId); return esc(p ? p.color : 'var(--slate)'); };
 const tkTip = (t, sp) => `${STATUS[t.status || 'todo']} · ${t.title} · ${range(sp.lo, sp.hi)}${t.assignee ? ' · 담당 ' + t.assignee : ''}`;
 function calItems(skipMulti){
   const map = {};
@@ -913,7 +937,7 @@ function calItems(skipMulti){
     for (let i = 0; i <= span; i++) {
       const ds = iso(addDays(parse(e.date), i));
       const lab = i === 0 ? `${e.time ? `<span class="tm">${esc(e.time)}</span>` : ''}${esc(e.title)}${span ? ` <span class="tm">~${short(end)}</span>` : ''}` : `↳ ${esc(e.title)}`;
-      put(ds, {html: `<button type="button" class="it k${esc(e.kind||'etc')}" data-act="edit-event" data-id="${esc(e.id)}" title="${esc(tip)}">${lab}</button>`, sort: (span ? '0' : '1') + (e.time || '')});
+      put(ds, {html: `<button type="button" class="it" style="--k:${kindC(e.kind)}" data-act="edit-event" data-id="${esc(e.id)}" title="${esc(tip)}">${lab}</button>`, sort: (span ? '0' : '1') + (e.time || '')});
     }
   });
   S.d.milestones.forEach(m => { const p = proj(m.projectId); put(m.date, {html: `<button type="button" class="it ms" style="--k:${esc(p ? p.color : 'var(--ink)')}" data-act="edit-ms" data-id="${esc(m.id)}" title="마일스톤: ${esc(m.title)}">${esc(m.title)}</button>`, sort: '0'}); });
@@ -966,7 +990,7 @@ V.calendar = () => {
         }
         const tip = `${e.title} · ${range(e.date, end)}${byText(e) ? ' · 입력 ' + byText(e) : ''}`;
         const lab = `${e.date >= ws && e.time ? `<span class="tm">${esc(e.time)}</span> ` : ''}${esc(e.title)}`;
-        bars.push(`<button type="button" class="it span k${esc(e.kind || 'etc')} ${cut}" style="${pos}" data-act="edit-event" data-id="${esc(e.id)}" title="${esc(tip)}">${lab}</button>`);
+        bars.push(`<button type="button" class="it span ${cut}" style="--k:${kindC(e.kind)};${pos}" data-act="edit-event" data-id="${esc(e.id)}" title="${esc(tip)}">${lab}</button>`);
       });
       const lanes = Math.min(laneEnd.length, MAXL);
       let cells = '';
@@ -989,7 +1013,7 @@ V.calendar = () => {
     let cols = '';
     for (let i = 0; i < 7; i++) {
       const d = addDays(s, i), ds = iso(d), its = items[ds] || [];
-      cols += `<div class="wcol ${ds === t ? 'today' : ''}"><div class="wh"><b>${d.getDate()}</b><span class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${DOW[i]}</span></div><div class="wl">${its.map(x => x.html).join('')}${canWrite ? `<button type="button" class="more" data-act="new-task-on" data-date="${ds}">+ 할 일</button><button type="button" class="more" data-act="new-event" data-date="${ds}">+ 일정</button>` : ''}</div></div>`;
+      cols += `<div class="wcol ${ds === t ? 'today' : ''}"><div class="wh"><b>${d.getDate()}</b><span class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${DOW[i]}</span></div><div class="wl">${its.map(x => x.html).join('')}${canWrite ? `<button type="button" class="more" data-act="new-task-on" data-date="${ds}">+ 할 일</button>${isAdmin ? `<button type="button" class="more" data-act="new-event" data-date="${ds}">+ 일정</button>` : ''}` : ''}</div></div>`;
     }
     body = `<div class="week">${cols}</div>`;
   }
@@ -1000,10 +1024,11 @@ V.calendar = () => {
     <button type="button" class="icon" data-act="cal-prev" aria-label="이전">‹</button>
     <button type="button" class="ghost" data-act="cal-today">오늘</button>
     <button type="button" class="icon" data-act="cal-next" aria-label="다음">›</button>
-    ${canWrite ? `<button type="button" class="ghost" data-act="new-ms">+ 마일스톤</button><button type="button" class="ghost" data-act="new-event" data-date="${today()}">+ 일정</button>` : ''}
+    ${canWrite ? `<button type="button" class="ghost" data-act="new-ms">+ 마일스톤</button>` : ''}
+    ${canWrite && isAdmin ? `<button type="button" class="ghost" data-act="new-event" data-date="${today()}">+ 일정</button>` : ''}
     ${addBtn('new-task', '+ 할 일')}
   </div>
-  <div class="legend"><span class="lg-tk">☐ 할 일 (프로젝트 색 · 시작일~마감일)</span><span class="lg-tk">☑ 완료</span>${KINDS.map(([k, l]) => `<span class="k${k}">${l}</span>`).join('')}<span style="--k:var(--ink-3)">◆ 마일스톤 · ↳ 이어지는 날 · 빈 칸을 누르면 그날 할 일 추가</span></div>
+  <div class="legend"><span class="lg-tk">☐ 할 일 · ☑ 완료 (종류 색, 종류 없으면 프로젝트 색)</span>${KINDS.map(([k, l]) => `<span style="--k:${kindC(k)}">${esc(l)}</span>`).join('')}${isAdmin && canWrite ? '<button type="button" class="linkbtn" data-act="kinds-edit">종류 편집</button>' : ''}<span style="--k:var(--ink-3)">◆ 마일스톤 · ↳ 이어지는 날 · 빈 칸을 누르면 그날 할 일 추가</span></div>
   <div class="calwrap">
     <div class="calmain">
       ${body}
@@ -1096,7 +1121,7 @@ V.timeline = () => {
     <button type="button" class="icon" data-act="tl-prev" aria-label="2주 앞으로">‹</button>
     <button type="button" class="ghost" data-act="tl-today">오늘</button>
     <button type="button" class="icon" data-act="tl-next" aria-label="2주 뒤로">›</button>
-    ${canWrite ? `<button type="button" class="ghost" data-act="new-event" data-date="${t}">+ 일정</button>` : ''}
+    ${canWrite && isAdmin ? `<button type="button" class="ghost" data-act="new-event" data-date="${t}">+ 일정</button>` : ''}
     ${addBtn('new-task', '+ 할 일')}
   </div>
   <div class="bar">
@@ -1317,9 +1342,10 @@ function taskForm(t, preset = {}){
     fields: [
       {key:'title', label:'제목', wide:true, required:true, ph:'예: 몬스터 원화 3종'},
       {key:'projectId', label:'프로젝트', type:'select', options: projOpts()},
+      {key:'kind', label:'종류', type:'select', options: [['', '없음 (프로젝트 색)'], ...KINDS], hint:'캘린더 색'},
       {key:'status', label:'상태', type:'select', options: Object.entries(STATUS)},
-      {key:'assignee', label:'담당', list: memberNames(), ph:'이름'},
       {key:'priority', label:'우선순위', type:'select', options: Object.entries(PRI)},
+      {key:'assignee', label:'담당', list: memberNames(), ph:'이름', wide:true},
       {key:'start', label:'언제부터 (시작일)', type:'date'},
       {key:'due', label:'언제까지 (마감일)', type:'date'},
       ...authorFields(),
@@ -1330,7 +1356,7 @@ function taskForm(t, preset = {}){
     onSave: async v => {
       if (!guard()) throw new Error('수정 권한이 없어요.');
       if (v.start && v.due && v.start > v.due) throw new Error('시작일이 마감일보다 늦어요.');
-      const data = {title:v.title, projectId:v.projectId, status:v.status, assignee:v.assignee, priority:v.priority, start:v.start, due:v.due, note:v.note, by:v.by, team:v.team};
+      const data = {title:v.title, projectId:v.projectId, kind:v.kind, status:v.status, assignee:v.assignee, priority:v.priority, start:v.start, due:v.due, note:v.note, by:v.by, team:v.team};
       if (!t) data.createdAt = Date.now();
       if (!t || t.status !== v.status) data.doneAt = v.status === 'done' ? today() : '';
       await save('tasks', t && t.id, data);
@@ -1343,7 +1369,24 @@ function taskForm(t, preset = {}){
     } : null
   });
 }
+/* 일정(발표 · 행사 등)은 관리자만 추가 · 수정 · 삭제. 다른 사람은 내용만 봄 */
+function eventView(ev){
+  const end = isDate(ev.end) && ev.end > ev.date ? ev.end : ev.date;
+  modal.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="sheet-h"><h2 id="mTitle">${esc(ev.title)}</h2>${kindPill(ev.kind)}<button type="button" class="x" data-close aria-label="닫기">×</button></div>
+    <dl class="evview">
+      <dt>날짜</dt><dd>${isDate(ev.date) ? esc(end !== ev.date ? `${md(ev.date)} – ${md(end)}` : md(ev.date)) : '-'}</dd>
+      ${ev.time ? `<dt>시간</dt><dd>${esc(ev.time)}</dd>` : ''}
+      ${ev.team ? `<dt>팀</dt><dd>${tchip(ev.team) || esc(ev.team)}</dd>` : ''}
+      ${ev.note ? `<dt>메모</dt><dd class="body">${esc(ev.note)}</dd>` : ''}
+    </dl>
+    <div class="sheet-f"><span class="muted">일정은 관리자만 고칠 수 있어요.</span><span class="sp"></span><button type="button" class="ghost" data-close>닫기</button></div>
+  </div>`;
+  modal.hidden = false;
+  modal.querySelector('[data-close]').focus();
+}
 function eventForm(ev, date){
+  if (!isAdmin) { if (ev) return eventView(ev); return toast('일정은 관리자만 추가할 수 있어요.'); }
   if (!ev && !guard()) return;
   openForm({
     title: ev ? '일정 편집' : '새 일정',
@@ -1356,7 +1399,7 @@ function eventForm(ev, date){
       ...authorFields(),
       {key:'note', label:'메모', type:'textarea'}
     ],
-    values: {...(ev || {date: date || today(), kind:'meet'}), ...authorVals(ev)},
+    values: {...(ev || {date: date || today(), kind: (KINDS[0] || [''])[0]}), ...authorVals(ev)},
     saveLabel: ev ? '저장' : '추가',
     onSave: async v => {
       if (!guard()) throw new Error('수정 권한이 없어요.');
@@ -1629,6 +1672,59 @@ function teamForm(){
     catch (x) { showErr(x.message || '저장하지 못했어요.'); btn.disabled = false; btn.textContent = '저장'; }
   });
 }
+/* 일정 · 할 일 종류 편집 (관리자만): 이름 / 색 / 빼기 */
+function kindsForm(){
+  if (!guard()) return;
+  if (!isAdmin) return toast('종류 편집은 관리자만 할 수 있어요.');
+  let rows = KINDS.map(([id, name]) => ({id, name, color: kindC(id)}));
+  const used = id => S.d.events.filter(e => e.kind === id).length + S.d.tasks.filter(t => t.kind === id).length;
+  const paint = () => {
+    modal.querySelector('#kBody').innerHTML = rows.map((r, i) => `<tr>
+      <td><input type="color" data-ki="${i}" data-kk="color" value="${esc(r.color)}" aria-label="${esc(r.name || '새 종류')} 색" class="kcolor"></td>
+      <td><input data-ki="${i}" data-kk="name" value="${esc(r.name)}" aria-label="종류 이름" placeholder="예: 스터디"></td>
+      <td class="num muted">${r.id && used(r.id) ? `${used(r.id)}건` : ''}</td>
+      <td><button type="button" class="rx" data-kdel="${i}" aria-label="${esc(r.name || '이 줄')} 빼기" title="빼기">×</button></td>
+    </tr>`).join('');
+  };
+  modal.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle"><form id="mForm" novalidate>
+    <div class="sheet-h"><h2 id="mTitle">일정 · 할 일 종류</h2><button type="button" class="x" data-close aria-label="닫기">×</button></div>
+    <div class="rsec">
+      <div class="flab">종류 <span class="hint">색 칸을 눌러 색을 고르세요 · 빼면 그 종류였던 항목은 "기타" 회색으로 보여요</span></div>
+      <div class="rwrap"><table class="rtable ktable"><thead><tr><th>색</th><th>이름</th><th>쓰는 곳</th><th><span class="sr">빼기</span></th></tr></thead><tbody id="kBody"></tbody></table></div>
+      <button type="button" class="ghost radd-row" id="kAdd">+ 종류 추가</button>
+    </div>
+    <p class="ferr" id="mErr" hidden></p>
+    <div class="sheet-f"><span class="sp"></span><button type="button" class="ghost" data-close>취소</button><button type="submit" class="primary" id="mSave">저장</button></div>
+  </form></div>`;
+  modal.hidden = false;
+  paint();
+  const form = $('#mForm'), err = $('#mErr');
+  const showErr = m => { err.textContent = m; err.hidden = false; };
+  form.addEventListener('input', e => { const el = e.target.closest('[data-ki]'); if (el) rows[+el.dataset.ki][el.dataset.kk] = el.value; });
+  form.addEventListener('click', e => {
+    const d = e.target.closest('[data-kdel]');
+    if (d) { rows.splice(+d.dataset.kdel, 1); paint(); }
+  });
+  $('#kAdd').addEventListener('click', () => {
+    const taken = new Set(rows.map(r => r.color.toLowerCase()));
+    rows.push({id: '', name: '', color: PALETTE.find(c => !taken.has(c.toLowerCase())) || PALETTE[rows.length % PALETTE.length]});
+    paint();
+    modal.querySelector(`[data-ki="${rows.length - 1}"][data-kk="name"]`)?.focus();
+  });
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const list = rows.map(r => ({...r, name: r.name.trim()})).filter(r => r.name);
+    if (!list.length) return showErr('종류를 하나 이상 남겨 주세요.');
+    const bad = list.find(r => !TEAM_NAME_OK(r.name));
+    if (bad) return showErr(`"${bad.name}"은(는) 쓸 수 없어요. 20자 이하로, / , < > " ' & 없이 적어 주세요.`);
+    const dup = list.map(r => r.name).find((n, i, a) => a.indexOf(n) !== i);
+    if (dup) return showErr(`"${dup}"이(가) 두 번 있어요.`);
+    list.forEach(r => { if (!r.id) r.id = 'k' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); if (!/^#[0-9a-f]{6}$/i.test(r.color)) r.color = KIND_GRAY; });
+    const btn = $('#mSave'); btn.disabled = true; btn.textContent = '저장 중…'; err.hidden = true;
+    try { await db.doc('settings/kinds').set({list}); closeModal(); toast(`종류 ${list.length}개를 저장했어요.`); }
+    catch (x) { showErr(dbErr(x)); btn.disabled = false; btn.textContent = '저장'; }
+  });
+}
 function goalForm(g){
   if (!guard()) return;
   openForm({
@@ -1729,6 +1825,7 @@ main.addEventListener('click', e => {
     case 'upload-art': if (guard()) { if (me) $('#artFile').click(); else meForm(() => toast('이제 이미지 올리기를 다시 눌러 주세요.')); } return;
     case 'team-roster': return teamForm();
     case 'team-add': return addTeamForm();
+    case 'kinds-edit': return kindsForm();
     case 'relogin': return $('#outBtn').click();
     case 'view-art': { const a = byId('art', id); if (a) openLightbox(a.assetId, a.title, a); return; }
     case 'view-img': return openLightbox(el.dataset.src, el.dataset.cap);
@@ -1832,6 +1929,10 @@ async function boot(){
     S.loaded.add(col);
     if (modal.hidden) render(); else pending = true;
   }, onErr));
+  db.doc('settings/kinds').onSnapshot(snap => {
+    applyKinds(snap.exists ? snap.data().list : null);
+    if (modal.hidden) render(); else pending = true;
+  }, () => {});
   db.doc('settings/team').onSnapshot(snap => {
     const d = snap.exists ? snap.data() : {};
     S.team = Array.isArray(d.members) ? d.members : [];
