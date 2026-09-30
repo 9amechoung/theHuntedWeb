@@ -62,6 +62,7 @@ h1,h2,h3{margin:0;text-wrap:balance}
 .tab[aria-current="page"]::after{content:"";position:absolute;left:8px;right:8px;bottom:-2px;height:4px;background:var(--ink)}
 .who{display:flex;gap:8px;align-items:center;padding-bottom:8px;margin-left:auto}
 .badge{font-size:12px;padding:2px 8px;border:1.5px solid var(--ink-3);color:var(--ink-2)}
+.badge.admin{border-color:var(--blue);color:var(--blue)}
 
 main{max-width:1280px;margin:0 auto;padding-block:24px 64px;padding-inline:20px;display:flex;flex-direction:column;gap:20px}
 
@@ -448,7 +449,7 @@ button.trow:hover{background:var(--slate-soft)}
   <div class="top-in">
     <div class="brand"><span class="logo">HUNTED</span><small>졸업작품 작업실</small></div>
     <nav class="tabs" id="tabs" aria-label="화면"></nav>
-    <div class="who"><span id="roBadge" class="badge" hidden>보기 전용</span><button id="meBtn" class="ghost meBtn" type="button" hidden></button><button id="teamBtn" class="ghost" type="button">팀원 명단</button><button id="outBtn" class="ghost" type="button" hidden>로그아웃</button></div>
+    <div class="who"><span id="roBadge" class="badge" hidden>보기 전용</span><span id="adminBadge" class="badge admin" hidden>관리자</span><button id="meBtn" class="ghost meBtn" type="button" hidden></button><button id="teamBtn" class="ghost" type="button">팀원 명단</button><button id="outBtn" class="ghost" type="button" hidden>로그아웃</button></div>
   </div>
 </header>
 <main id="main"></main>
@@ -470,7 +471,7 @@ button.trow:hover{background:var(--slate-soft)}
 </div>
 
 <script type="module">
-import { db, assets, onAuth, login, logout, AUTH_MSG } from './firebase.js';
+import { db, assets, onAuth, login, logout, AUTH_MSG, isAdminUser } from './firebase.js';
 window.__fbLoaded = true;
 const gate = document.getElementById('gate'), form = document.getElementById('gateForm');
 const em = document.getElementById('gateEmail'), pw = document.getElementById('gatePw');
@@ -483,7 +484,7 @@ onAuth(u => {
   document.getElementById('outBtn').hidden = false;
   if (ready) return;
   ready = true;
-  const user = {can: async () => true, id: async () => u.uid};
+  const user = {can: async () => true, id: async () => u.uid, isAdmin: async () => isAdminUser(u)};
   window.claude = {use: async n => n === 'db' ? db : n === 'assets' ? assets : n === 'user' ? user : null};
   window.dispatchEvent(new Event('hunted-ready'));
 });
@@ -574,6 +575,7 @@ const S = {
   rep: {who: '', project: '', team: ''}
 };
 let db = null, assets = null, canWrite = false, myId = null;
+let isAdmin = false;   // 관리자 계정만 팀원 명단 · 팀 목록 편집
 
 let me = null;
 try { me = JSON.parse(store.get('me') || 'null'); } catch {}
@@ -672,6 +674,7 @@ const main = $('#main');
 function paintChrome(){
   $('#tabs').innerHTML = VIEWS.map(([k, l]) => `<button class="tab" type="button" data-view="${k}" ${S.view === k ? 'aria-current="page"' : ''}>${l}</button>`).join('');
   $('#roBadge').hidden = canWrite || S.dbState !== 'ok';
+  $('#adminBadge').hidden = !isAdmin;
   const mb = $('#meBtn');
   mb.hidden = !(canWrite && S.dbState === 'ok');
   mb.innerHTML = me ? `${esc(me.name)} ${tchip(me.team)}` : '내 이름 등록';
@@ -752,7 +755,7 @@ const artPart = role => ART_PARTS.find(([, , f]) => f(role || '')) || ['기타',
 const isLead = m => /팀장/.test(m.role || '');
 const nameList = ms => ms.map(m => `<span class="${isLead(m) ? 'lead' : ''}"${isLead(m) ? ' title="팀장"' : ''}>${esc(m.name)}</span>`).join(', ');
 function crewPanel(){
-  const head = `<div class="ph"><h2>팀 구성</h2><span class="cnt">총 ${S.team.length}명</span><span class="sp"></span>${canWrite ? '<button type="button" class="linkbtn" data-act="team-add">+ 팀 추가</button>' : ''}<button type="button" class="linkbtn" data-act="team-roster">팀원 명단</button></div>`;
+  const head = `<div class="ph"><h2>팀 구성</h2><span class="cnt">총 ${S.team.length}명</span><span class="sp"></span>${canWrite && isAdmin ? '<button type="button" class="linkbtn" data-act="team-add">+ 팀 추가</button>' : ''}<button type="button" class="linkbtn" data-act="team-roster">팀원 명단</button></div>`;
   if (!S.team.length) return `<section class="panel full">${head}<p class="empty">팀원 명단이 비어 있어요. <b>팀원 명단</b>에서 이름을 넣어 주세요.</p></section>`;
   const col = (t, body, n, wide) => `<div class="crew-t${wide ? ' wide' : ''}" style="--c:${TEAM_C[t]}"><div class="crew-h"><span class="tchip" style="--c:${TEAM_C[t]}">${t}</span><b>${n}</b><span class="muted">명</span></div>${body}</div>`;
   const of = t => S.team.filter(m => m.team === t);
@@ -1491,6 +1494,7 @@ function parseTeamNames(text){
 }
 function addTeamForm(){
   if (!guard()) return;
+  if (!isAdmin) return toast('팀 추가는 관리자만 할 수 있어요.');
   const used = new Set(Object.values(TEAM_C));
   openForm({
     title: '팀 추가',
@@ -1510,7 +1514,7 @@ function addTeamForm(){
 }
 /* 팀원 명단: 위는 팀 목록(추가 · 삭제), 아래는 이름 / 팀 / 역할 표. 저장을 눌러야 반영 */
 function teamForm(){
-  const ro = !canWrite;
+  const ro = !canWrite || !isAdmin;
   let teams = teamList();
   const order = n => { const i = teams.findIndex(t => t.name === n); return i < 0 ? 99 : i; };
   let rows = S.team.map((m, i) => ({name: m.name || '', team: TEAMS.includes(m.team) ? m.team : '', role: m.role || '', i}))
@@ -1535,7 +1539,7 @@ function teamForm(){
         </tr>`).join('') : `<tr><td colspan="4" class="muted">${filter ? '이 팀에 아직 사람이 없어요.' : '팀원이 없어요.'}</td></tr>`;
   };
   modal.innerHTML = `<div class="sheet roster" role="dialog" aria-modal="true" aria-labelledby="mTitle"><form id="mForm" novalidate>
-    <div class="sheet-h"><h2 id="mTitle">팀원 명단</h2><button type="button" class="x" data-close aria-label="닫기">×</button></div>
+    <div class="sheet-h"><h2 id="mTitle">팀원 명단</h2>${ro ? '<span class="badge">보기 전용 · 수정은 관리자만</span>' : ''}<button type="button" class="x" data-close aria-label="닫기">×</button></div>
     <div class="rsec">
       <div class="flab">팀</div>
       <div class="chips" id="rTeams"></div>
@@ -1796,6 +1800,7 @@ async function boot(){
   const cw = u ? await u.can('data.write') : null;
   canWrite = cw !== false;
   myId = u ? await u.id() : null;
+  isAdmin = !!(u && u.isAdmin && await u.isAdmin());
   S.dbState = 'ok';
   paintChrome(); render();
   const onErr = e => { if (e && e.code === 'revoked') { canWrite = false; } S.dbState = 'error'; paintChrome(); render(); };
