@@ -1,0 +1,1538 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>더 헌티드 홈페이지</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: 만화 원고지. 파란 가이드선 격자 위에 잉크 테두리 칸(패널)으로 화면을 나누고, 선택 상태는 스크린톤으로 표시 */
+:root{
+  --paper:#f4f6f9; --panel:#ffffff; --ink:#14161b; --ink-2:#474d5a; --ink-3:#7d8494; --rule:#d3d9e2;
+  --grid:rgba(47,135,208,.09);
+  --blue:#2f87d0; --blue-soft:#e2eefa; --red:#cf3b27; --red-soft:#fbe4df;
+  --amber:#b87a0c; --amber-soft:#fbefd6; --green:#23804f; --green-soft:#dcf1e5;
+  --slate:#5d6678; --slate-soft:#e8ebf0; --violet:#7250d0;
+  --f-display:"Black Han Sans","IBM Plex Sans KR","Malgun Gothic",sans-serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --frame:2px solid var(--ink);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0f1115; --panel:#171a20; --ink:#eceef3; --ink-2:#b3b9c5; --ink-3:#7a8191; --rule:#2a2f38;
+  --grid:rgba(107,182,242,.06);
+  --blue:#6bb6f2; --blue-soft:#172a3c; --red:#f2705b; --red-soft:#3b1e19;
+  --amber:#e3a93a; --amber-soft:#35290f; --green:#4fc184; --green-soft:#14301f;
+  --slate:#9aa3b5; --slate-soft:#232833; --violet:#a58cf5; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --paper:#0f1115; --panel:#171a20; --ink:#eceef3; --ink-2:#b3b9c5; --ink-3:#7a8191; --rule:#2a2f38;
+  --grid:rgba(107,182,242,.06);
+  --blue:#6bb6f2; --blue-soft:#172a3c; --red:#f2705b; --red-soft:#3b1e19;
+  --amber:#e3a93a; --amber-soft:#35290f; --green:#4fc184; --green-soft:#14301f;
+  --slate:#9aa3b5; --slate-soft:#232833; --violet:#a58cf5; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{
+  background-color:var(--paper); color:var(--ink); font-family:var(--f-body); font-size:14px; line-height:1.55;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;text-wrap:balance}
+
+/* 상단 */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:var(--frame)}
+.top-in{max-width:1280px;margin:0 auto;padding:10px 20px 0;display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px 24px}
+.brand{display:flex;align-items:baseline;gap:10px;padding-bottom:10px}
+.logo{font-family:var(--f-display);font-size:26px;letter-spacing:.06em;line-height:1}
+.brand small{color:var(--ink-3);font-size:12px;letter-spacing:.04em}
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1 1 auto;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{border:0;background:none;padding:8px 12px 10px;white-space:nowrap;font-weight:500;color:var(--ink-2);position:relative}
+.tab:hover{color:var(--ink)}
+.tab[aria-current="page"]{color:var(--ink)}
+.tab[aria-current="page"]::after{content:"";position:absolute;left:8px;right:8px;bottom:-2px;height:4px;background:var(--ink)}
+.who{display:flex;gap:8px;align-items:center;padding-bottom:8px;margin-left:auto}
+.badge{font-size:12px;padding:2px 8px;border:1.5px solid var(--ink-3);color:var(--ink-2)}
+
+main{max-width:1280px;margin:0 auto;padding-block:24px 64px;padding-inline:20px;display:flex;flex-direction:column;gap:20px}
+
+/* 공통 */
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+.bar .sp{flex:1}
+.vtitle{font-family:var(--f-display);font-size:30px;line-height:1.1;letter-spacing:.01em}
+.vsub{color:var(--ink-2);margin-top:4px}
+.panel{background:var(--panel);border:var(--frame);min-width:0}
+.ph{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1.5px solid var(--ink)}
+.ph h2{font-family:var(--f-display);font-size:17px;font-weight:400;letter-spacing:.02em}
+.ph .cnt{font-family:var(--f-mono);font-size:12px;color:var(--ink-3)}
+.ph .sp{flex:1}
+.pb{padding:12px 14px}
+.primary,.ghost,.danger,.seg button{border:1.5px solid var(--ink);padding:6px 12px;background:var(--panel);font-weight:500;line-height:1.3}
+.primary{background:var(--ink);color:var(--panel);box-shadow:3px 3px 0 var(--blue)}
+.primary:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--blue)}
+.primary:disabled{opacity:.6;transform:none}
+.ghost:hover{background:var(--slate-soft)}
+.danger{border-color:var(--red);color:var(--red)}
+.danger.armed{background:var(--red);color:var(--panel)}
+.icon{border:1.5px solid var(--ink);background:var(--panel);width:32px;height:32px;display:inline-grid;place-items:center;font-size:16px;line-height:1}
+.icon:hover{background:var(--slate-soft)}
+.seg{display:inline-flex}
+.seg button+button{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+select.sel{border:1.5px solid var(--ink);background:var(--panel);padding:5px 8px;max-width:100%}
+.empty{color:var(--ink-3);padding:18px 14px;text-align:left}
+.empty b{color:var(--ink-2);font-weight:500}
+.notice{border:var(--frame);background:var(--amber-soft);padding:12px 14px}
+.muted{color:var(--ink-3)}
+
+/* 칩과 상태 */
+.pchip{display:inline-flex;align-items:center;gap:6px;font-size:12px;line-height:1.5;padding:0 7px;border:1px solid color-mix(in srgb,var(--c) 60%,transparent);background:color-mix(in srgb,var(--c) 14%,transparent);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.pchip::before{content:"";flex:none;width:7px;height:7px;background:var(--c)}
+.st{font-size:11.5px;padding:0 6px;border:1.5px solid var(--ink-3);color:var(--ink-2);white-space:nowrap;letter-spacing:.02em}
+.st.doing{border-color:var(--blue);background:var(--blue-soft);color:var(--blue)}
+.st.done{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+.due{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);white-space:nowrap}
+.due.late{color:var(--red);font-weight:500}
+.pri-high{color:var(--red);font-weight:700}
+
+/* 할 일 줄 */
+.rows{display:flex;flex-direction:column}
+.trow{display:flex;align-items:center;gap:10px;padding:8px 14px;border:0;border-top:1px solid var(--rule);background:none;text-align:left;width:100%;min-width:0}
+.rows>.trow:first-child{border-top:0}
+button.trow:hover{background:var(--slate-soft)}
+.trow .tt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow.done .tt{text-decoration:line-through;color:var(--ink-3)}
+.trow input[type=checkbox]{width:17px;height:17px;accent-color:var(--ink);flex:none}
+
+/* 개요 */
+.ov{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.ov .full{grid-column:1/-1}
+.today-line{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px}
+.kpis{display:flex;flex-wrap:wrap;gap:6px 16px;color:var(--ink-2)}
+.kpis b{font-family:var(--f-mono);font-size:16px;color:var(--ink)}
+.kpis .late b{color:var(--red)}
+.prog{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 14px;border-top:1px solid var(--rule)}
+.prog:first-child{border-top:0}
+.meter{grid-column:1/-1;height:10px;border:1.5px solid var(--ink);background:var(--panel);position:relative;overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;background:var(--c)}
+.crew{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr)}
+.crew-t{padding:12px 14px;border-left:1.5px solid var(--ink);min-width:0}
+.crew-t:first-child{border-left:0}
+.crew-h{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.crew-h b{font-family:var(--f-mono);font-size:22px;line-height:1;color:var(--c)}
+.crew-h .tchip{align-self:center}
+.crew-n{font-size:12.5px;color:var(--ink-2);line-height:1.6}
+.crew-n .lead{font-weight:700;color:var(--ink)}
+.crew-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 20px}
+.crew-k{font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.04em;margin:2px 0 2px}
+.crew-g > div > div + div .crew-k{margin-top:12px}
+.crew-r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 10px;padding:4px 0;border-top:1px solid var(--rule)}
+.crew-r .nm{font-weight:700;font-size:13px}
+.crew-r .num{font-size:13px}
+.crew-r .crew-n{grid-column:1/-1}
+.up{display:flex;gap:12px;align-items:center;padding:8px 14px;border:0;border-top:1px solid var(--rule);width:100%;background:none;text-align:left}
+.up:first-child{border-top:0}
+.up:hover{background:var(--slate-soft)}
+.up .d{font-family:var(--f-mono);font-size:12px;width:58px;flex:none;color:var(--ink-2)}
+.up .tt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 캘린더 */
+.cal{border:var(--frame);background:var(--panel)}
+.cal-h,.cal-w{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cal-w{position:relative;--bt:27px;--lh:20px}
+.lanes{flex:none;height:calc(var(--lanes) * var(--lh) - 3px)}
+.it.span{position:absolute;top:calc(var(--bt) + var(--lane) * var(--lh));left:calc(var(--c0) * 100% / 7 + 3px);width:calc(var(--n) * 100% / 7 - 6px);height:calc(var(--lh) - 3px);line-height:calc(var(--lh) - 3px);padding-block:0;border-radius:4px;z-index:1}
+.it.span.cut-l{border-left-style:dotted;border-top-left-radius:0;border-bottom-left-radius:0}
+.it.span.cut-r{border-top-right-radius:0;border-bottom-right-radius:0}
+.it.span .tm{font-family:var(--f-mono);font-size:11px;color:var(--ink-2)}
+.cal-h div{padding:6px 8px;font-size:12px;font-weight:700;border-bottom:1.5px solid var(--ink);letter-spacing:.04em}
+.sun{color:var(--red)} .sat{color:var(--blue)}
+.cell{min-height:112px;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:4px 5px 6px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.cell:nth-child(7n){border-right:0}
+.cell[data-act]{cursor:cell}
+.cell[data-act]:hover{background:color-mix(in srgb,var(--blue-soft) 60%,transparent)}
+.cell.out{background:color-mix(in srgb,var(--slate-soft) 55%,transparent)}
+.cell.out .dn{color:var(--ink-3)}
+.dn{font-family:var(--f-mono);font-size:12px;align-self:flex-start;padding:0 4px;line-height:20px}
+.cell.today .dn{background:var(--ink);color:var(--panel)}
+.it{display:block;width:100%;text-align:left;font-size:12px;line-height:1.35;padding:1px 5px;border:0;border-left:3px solid var(--k);background:color-mix(in srgb,var(--k) 13%,transparent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.it:hover{background:color-mix(in srgb,var(--k) 26%,transparent)}
+.it.ms{border-left:0;padding-left:3px}
+.it.ms::before{content:"◆ ";color:var(--k)}
+.it.tk{border-left-style:dotted}
+.it.fin{text-decoration:line-through;opacity:.65}
+.more{font-size:11.5px;border:0;background:none;color:var(--ink-2);text-align:left;padding:0 5px}
+.more:hover{text-decoration:underline}
+.kmeet{--k:var(--blue)} .kdue{--k:var(--red)} .kshow{--k:var(--amber)} .kfb{--k:var(--green)} .ketc{--k:var(--slate)}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:var(--frame);background:var(--panel)}
+.wcol{border-right:1px solid var(--rule);min-height:320px;display:flex;flex-direction:column;min-width:0}
+.wcol:last-child{border-right:0}
+.wcol .wh{padding:8px;border-bottom:1.5px solid var(--ink);display:flex;align-items:baseline;gap:6px}
+.wcol .wh b{font-family:var(--f-display);font-weight:400;font-size:22px;line-height:1}
+.wcol.today .wh{background:var(--ink);color:var(--panel)}
+.wcol .wl{padding:6px;display:flex;flex-direction:column;gap:4px;flex:1}
+.wcol .it{white-space:normal;padding:4px 6px}
+.wcol .it .tm{font-family:var(--f-mono);font-size:11px;display:block;color:var(--ink-2)}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink-2)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;background:var(--k)}
+
+/* 칸반 */
+.kb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.kcol{background:var(--panel);border:var(--frame);min-width:0;display:flex;flex-direction:column}
+.kcol .ph{position:relative}
+.kcol.over{background-image:radial-gradient(circle,color-mix(in srgb,var(--blue) 45%,transparent) 1px,transparent 1.3px);background-size:6px 6px}
+.klist{display:flex;flex-direction:column;gap:10px;padding:12px;min-height:120px}
+.card{border:1.5px solid var(--ink);background:var(--panel);padding:10px 11px;text-align:left;display:flex;flex-direction:column;gap:7px;width:100%}
+.card[draggable="true"]{cursor:grab}
+.card:hover{box-shadow:3px 3px 0 var(--ink)}
+.card.dragging{opacity:.4}
+.card .ct{font-weight:500;line-height:1.4;overflow-wrap:anywhere}
+.card .cm{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:12px;color:var(--ink-2)}
+.card.done .ct{color:var(--ink-3);text-decoration:line-through}
+
+/* 타임라인 */
+.twrap{overflow-x:auto;border:var(--frame);background:var(--panel)}
+.tl-in{position:relative;width:var(--tw)}
+.tl-head{position:sticky;top:0;height:58px;border-bottom:1.5px solid var(--ink);background:var(--panel);z-index:2}
+.tl-m{position:absolute;top:6px;font-weight:700;font-size:14px;white-space:nowrap;padding-left:6px}
+.tl-d{position:absolute;top:28px;width:var(--w);display:flex;flex-direction:column;align-items:center;line-height:1.15}
+.tl-d small{font-size:10px;color:var(--ink-3)}
+.tl-d span{font-family:var(--f-mono);font-size:12px}
+.tl-d.sun span,.tl-d.sun small{color:var(--red)}
+.tl-d.sat span,.tl-d.sat small{color:var(--blue)}
+.tl-d.td span{background:var(--ink);color:var(--panel);padding:0 4px}
+.tl-body{position:relative;min-height:120px}
+.tl-bg{position:absolute;inset:0;pointer-events:none}
+.tl-bg .we{position:absolute;top:0;bottom:0;width:var(--w);background:color-mix(in srgb,var(--slate-soft) 65%,transparent)}
+.tl-bg .wk{position:absolute;top:0;bottom:0;width:1px;background:var(--rule)}
+.tl-bg .now{position:absolute;top:0;bottom:0;width:2px;background:var(--red);margin-left:calc(var(--w) / 2 - 1px)}
+.tb{position:absolute;height:36px;border:1.5px solid var(--c);background:color-mix(in srgb,var(--c) 24%,var(--panel));text-align:left;padding:2px 7px;display:flex;flex-direction:column;justify-content:center;white-space:nowrap;overflow:visible;min-width:8px;z-index:1}
+.tb:hover{box-shadow:3px 3px 0 var(--ink);z-index:3}
+.tb b{font-size:12.5px;font-weight:700;line-height:1.25}
+.tb small{font-size:11px;color:var(--ink-2);line-height:1.25}
+.tb.doing{background:color-mix(in srgb,var(--c) 45%,var(--panel))}
+.tb.done{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--c) 30%,var(--panel)) 0 4px,var(--panel) 4px 8px)}
+.tb.done b{text-decoration:line-through}
+.tb.ev{border-style:dashed}
+.tb.cut-l{border-left-style:dotted}
+.tb.cut-r{border-right-style:dotted}
+.undated{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.undated button{border:1px dashed var(--ink-3);background:var(--panel);font-size:12.5px;padding:2px 8px}
+.glegend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--ink-2);align-items:center}
+.glegend i{display:inline-block;width:22px;height:11px;vertical-align:-1px;margin-right:5px;border:1.5px solid var(--slate)}
+.glegend .l-todo{background:color-mix(in srgb,var(--slate) 24%,var(--panel))}
+.glegend .l-doing{background:color-mix(in srgb,var(--slate) 45%,var(--panel))}
+.glegend .l-done{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--slate) 30%,var(--panel)) 0 4px,var(--panel) 4px 8px)}
+.glegend .l-ev{border-style:dashed;background:color-mix(in srgb,var(--slate) 24%,var(--panel))}
+
+/* 팀 · 작성자 */
+.tchip{display:inline-flex;align-items:center;font-size:11.5px;line-height:1.5;padding:0 6px;border:1.5px solid var(--c);color:var(--c);font-weight:700;white-space:nowrap}
+.byline{font-size:11.5px;color:var(--ink-3)}
+.meBtn{display:inline-flex;gap:6px;align-items:center}
+
+/* 캘린더 + 사이드 */
+.calwrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+.calmain{display:flex;flex-direction:column;gap:20px;min-width:0}
+.calside{position:sticky;top:calc(env(safe-area-inset-top,0px) + 110px);min-width:0}
+.calside .goal{flex-wrap:wrap}
+.calside .goal .gt{flex-basis:100%}
+.calside .gbar2{flex:1 1 60px}
+.calside .ph{flex-wrap:wrap}
+.drow{display:flex;gap:14px;align-items:center;width:100%;text-align:left;border:0;border-top:1px solid var(--rule);background:none;padding:9px 14px;min-width:0}
+.rows>.drow:first-child{border-top:0}
+.drow:hover{background:var(--slate-soft)}
+.dd{flex:none;width:40px;display:flex;flex-direction:column;align-items:center;border:1.5px solid var(--ink);padding:2px 0;line-height:1.1}
+.dd b{font-family:var(--f-mono);font-size:16px}
+.dd small{font-size:10.5px;color:var(--ink-2)}
+.dd.now{background:var(--ink);color:var(--panel)}
+.dd.now small{color:var(--panel)}
+.dd.late{border-color:var(--red);color:var(--red)}
+.dmain{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.dt{font-weight:500;overflow-wrap:anywhere}
+.drow.done .dt{text-decoration:line-through;color:var(--ink-3)}
+.dm{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:12px}
+.kst{border-color:var(--k);color:var(--k)}
+
+/* 이달 목표 */
+.goal{display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid var(--rule);min-width:0}
+.rows>.goal:first-child{border-top:0}
+.goal .gt{flex:1;min-width:0;border:0;background:none;padding:0;text-align:left;font-weight:500;overflow-wrap:anywhere}
+.goal .gt:hover{text-decoration:underline}
+.goal.done .gt{text-decoration:line-through;color:var(--ink-3)}
+.goal .gby{font-size:12px;color:var(--ink-3);white-space:nowrap}
+.gdone{border:1.5px solid var(--ink);background:var(--panel);padding:3px 12px;font-weight:700;white-space:nowrap}
+.gdone:hover{background:var(--ink);color:var(--panel)}
+.goal.done .gdone{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+.gbar2{height:8px;border:1.5px solid var(--ink);flex:0 0 120px;position:relative;overflow:hidden}
+.gbar2 i{position:absolute;inset:0 auto 0 0;background:var(--green)}
+
+/* 할 일 (프로젝트별) */
+.plist{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px;align-items:start}
+.plist .ph .pchip{font-size:13px}
+.trow .who-s{font-size:12px;color:var(--ink-2);white-space:nowrap}
+.trow .open{border:0;background:none;padding:0;text-align:left;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trow .open:hover{text-decoration:underline}
+.qa{display:flex;border-top:1.5px solid var(--ink)}
+.qa input{flex:1;min-width:0;border:0;background:transparent;padding:9px 14px}
+.qa button{border:0;border-left:1.5px solid var(--ink);background:none;padding:0 14px;font-weight:500}
+.qa button:hover{background:var(--slate-soft)}
+
+/* 아트 바이블 */
+.bible{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;align-items:start}
+.sec{background:var(--panel);border:var(--frame);padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.sec h3{font-family:var(--f-display);font-weight:400;font-size:19px;letter-spacing:.01em;display:flex;gap:8px;align-items:baseline}
+.sec h3 .sp{flex:1}
+.sec .body{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink-2);max-width:65ch}
+.sw{display:flex;flex-wrap:wrap;gap:10px}
+.sw figure{margin:0;display:flex;flex-direction:column;gap:3px}
+.sw i{width:44px;height:30px;border:1.5px solid var(--ink);background:var(--sw)}
+.sw figcaption{font-family:var(--f-mono);font-size:11px;color:var(--ink-2)}
+.linkbtn{border:0;background:none;padding:0;color:var(--ink-3);font-size:12.5px;text-decoration:underline}
+.linkbtn:hover{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--ink);background:var(--panel);padding:3px 10px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.chip.dot::before{content:"";display:inline-block;width:8px;height:8px;margin-right:6px;background:var(--c);vertical-align:1px}
+.chip[aria-pressed="true"].dot::before{outline:1.5px solid var(--panel)}
+.chip:hover{background:var(--slate-soft)}
+.chip[aria-pressed="true"]:hover{background:var(--ink)}
+/* 선택 삭제 */
+.selmode [data-sel]{cursor:pointer;position:relative}
+.selmode .card[data-sel],.selmode .sec[data-sel]{padding-right:40px}
+.selmode .sec .linkbtn{visibility:hidden}
+.selmode .card[data-sel]::after,.selmode .sec[data-sel]::after,.selmode .shot[data-sel]::after{content:"";position:absolute;top:8px;right:8px;width:22px;height:22px;border:2px solid var(--ink);background:var(--panel);display:grid;place-items:center;font-size:14px;font-weight:700;line-height:1;z-index:1}
+.selmode .trow[data-sel]::before{content:"";flex:none;width:18px;height:18px;border:2px solid var(--ink);background:var(--panel);display:grid;place-items:center;font-size:12px;font-weight:700;line-height:1}
+.selmode [data-sel].picked{outline:3px solid var(--red);outline-offset:-3px;background:var(--red-soft)}
+.selmode [data-sel].picked::after,.selmode .trow[data-sel].picked::before{content:"✓";background:var(--red);border-color:var(--red);color:var(--panel)}
+.selmode .shot[data-sel].picked img{opacity:.6}
+.selbar{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:15;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;background:var(--panel);border:var(--frame);box-shadow:4px 4px 0 var(--ink);padding:10px 14px}
+.selbar .sp{flex:1}
+.selbar .danger:disabled{opacity:.5}
+.fgroup{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 12px;align-items:center}
+.flab{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink-2)}
+.chip .n{font-family:var(--f-mono);font-size:11px;margin-left:4px;opacity:.7}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.shot{border:var(--frame);background:var(--panel);display:flex;flex-direction:column;min-width:0;padding:0;text-align:left}
+.shot:hover{box-shadow:4px 4px 0 var(--ink)}
+.shot .im{aspect-ratio:16/10;max-width:100%;width:100%;background:var(--slate-soft);border-bottom:1.5px solid var(--ink);overflow:hidden}
+.shot img{width:100%;height:100%;object-fit:cover;display:block}
+.shot .cap{padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.shot .cap b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shot .cap span{font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 작업 보고 */
+.day{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:start}
+.dayh{position:sticky;top:120px;display:flex;flex-direction:column;gap:2px;padding-top:4px}
+.dayh b{font-family:var(--f-display);font-weight:400;font-size:30px;line-height:1;letter-spacing:.02em}
+.dayh span{color:var(--ink-2);font-size:13px}
+.reps{display:flex;flex-direction:column;gap:14px;min-width:0}
+.rep{background:var(--panel);border:var(--frame);padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.rep-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.rep-h h3{font-size:17px;font-weight:700;flex:1 1 240px;min-width:0;overflow-wrap:anywhere}
+.rep-m{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:12.5px;color:var(--ink-2)}
+.rep-m .by{font-weight:500;color:var(--ink)}
+.rep .body{white-space:pre-wrap;overflow-wrap:anywhere;max-width:72ch}
+.imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.imgs button{padding:0;border:1.5px solid var(--ink);background:var(--slate-soft);aspect-ratio:4/3;max-width:100%;overflow:hidden}
+.imgs img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* 모달 */
+.overlay{position:fixed;inset:0;z-index:50;background:color-mix(in srgb,var(--ink) 45%,transparent);display:grid;place-items:center;padding:16px;overflow:auto}
+.sheet{width:min(620px,100%);background:var(--panel);border:var(--frame);box-shadow:6px 6px 0 var(--ink);max-height:calc(100vh - 32px);overflow:auto}
+.sheet-h{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1.5px solid var(--ink);position:sticky;top:0;background:var(--panel);z-index:1}
+.sheet-h h2{font-family:var(--f-display);font-weight:400;font-size:20px;flex:1}
+.x{border:0;background:none;font-size:24px;line-height:1;width:32px;height:32px}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 14px;padding:16px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.fld.wide{grid-column:1/-1}
+.fld>span{font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink-2)}
+.fld input:not([type=file]):not([type=radio]),.fld select,.fld textarea{border:1.5px solid var(--ink);background:var(--panel);padding:7px 9px;width:100%;min-width:0}
+.fld textarea{min-height:120px;resize:vertical;line-height:1.6}
+.fld .hint{font-size:12px;color:var(--ink-3);font-weight:400;letter-spacing:0}
+.pal{display:flex;flex-wrap:wrap;gap:8px}
+.pal label{position:relative}
+.pal input{position:absolute;opacity:0;inset:0}
+.pal i{display:block;width:30px;height:30px;background:var(--c);border:1.5px solid var(--ink)}
+.pal input:checked+i{outline:3px solid var(--ink);outline-offset:2px}
+.pal input:focus-visible+i{outline:3px solid var(--blue);outline-offset:2px}
+.filebtn{display:inline-flex;align-self:flex-start;border:1.5px dashed var(--ink);padding:7px 12px;cursor:pointer;position:relative}
+.filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.filebtn:hover{background:var(--slate-soft)}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.thumbs figure{margin:0;position:relative;aspect-ratio:1;border:1.5px solid var(--ink);overflow:hidden;background:var(--slate-soft)}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.thumbs button{position:absolute;top:3px;right:3px;width:22px;height:22px;border:1.5px solid var(--ink);background:var(--panel);font-size:14px;line-height:1;padding:0}
+.ferr{margin:0 16px;padding:8px 10px;border:1.5px solid var(--red);background:var(--red-soft);color:var(--red)}
+.sheet-f{display:flex;gap:8px;align-items:center;padding:12px 16px;border-top:1.5px solid var(--ink);position:sticky;bottom:0;background:var(--panel)}
+.sheet-f .sp{flex:1}
+.lb{background:color-mix(in srgb,#000 82%,transparent)}
+.lb-in{display:flex;flex-direction:column;gap:10px;max-width:min(1200px,100%);max-height:100%}
+.lb-in img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border:2px solid var(--ink);background:var(--panel);align-self:center}
+.lb-cap{background:var(--panel);border:var(--frame);padding:10px 14px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.lb-cap .t{font-weight:700}
+.lb-cap .n{color:var(--ink-2);white-space:pre-wrap;flex-basis:100%}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--ink);color:var(--panel);padding:9px 16px;border:1.5px solid var(--ink);box-shadow:3px 3px 0 var(--blue);max-width:calc(100% - 32px)}
+
+@media (max-width:860px){
+  .ov{grid-template-columns:minmax(0,1fr)}
+  .crew{grid-template-columns:minmax(0,1fr)}
+  .crew-t{border-left:0;border-top:1.5px solid var(--ink)}
+  .crew-t:first-child{border-top:0}
+  .calwrap{grid-template-columns:minmax(0,1fr)}
+  .calside{position:static}
+  .kb{grid-template-columns:minmax(0,1fr)}
+  .day{grid-template-columns:minmax(0,1fr);gap:8px}
+  .dayh{position:static;flex-direction:row;align-items:baseline;gap:10px}
+  .week{grid-template-columns:minmax(0,1fr)}
+  .wcol{min-height:0;border-right:0;border-bottom:1px solid var(--rule)}
+  .wcol .wl{min-height:40px}
+}
+@media (max-width:560px){
+  .top-in{padding:8px 16px 0;gap:0 12px}
+  main{padding-inline:16px;padding-block:16px 48px}
+  .vtitle{font-size:24px}
+  .cell{min-height:74px;padding:2px}
+  .it{font-size:10.5px;padding:0 3px;border-left-width:2px}
+  .cal-w{--bt:25px;--lh:17px}
+  .it.span .tm{font-size:10px}
+  .fields{grid-template-columns:minmax(0,1fr)}
+  .goal{flex-wrap:wrap}
+  .gbar2{flex-basis:80px}
+  .plist{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><span class="logo">HUNTED</span><small>졸업작품 작업실</small></div>
+    <nav class="tabs" id="tabs" aria-label="화면"></nav>
+    <div class="who"><span id="roBadge" class="badge" hidden>보기 전용</span><button id="meBtn" class="ghost meBtn" type="button" hidden></button><button id="teamBtn" class="ghost" type="button">팀원 명단</button></div>
+  </div>
+</header>
+<main id="main"></main>
+<div id="modal" class="overlay" hidden></div>
+<div id="lightbox" class="overlay lb" hidden></div>
+<div id="toast" class="toast" role="status" hidden></div>
+<input type="file" id="artFile" accept="image/png,image/jpeg,image/gif,image/webp" multiple hidden>
+
+<script>
+(() => {
+'use strict';
+/* ---------- 유틸 ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parse = s => { const [y,m,d] = String(s).split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const sunday = d => addDays(d, -d.getDay());
+const diff = (a, b) => Math.round((parse(b) - parse(a)) / 86400000);
+const DOW = ['일','월','화','수','목','금','토'];
+const DOWL = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+const today = () => iso(new Date());
+const md = s => { const d = parse(s); return `${d.getMonth()+1}월 ${d.getDate()}일 (${DOW[d.getDay()]})`; };
+const short = s => { const d = parse(s); return `${d.getMonth()+1}/${d.getDate()}`; };
+const isDate = s => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
+const store = {
+  get(k){ try { return localStorage.getItem('hunted.' + k); } catch { return null; } },
+  set(k, v){ try { localStorage.setItem('hunted.' + k, v); } catch {} }
+};
+
+const STATUS = {todo:'할 일', doing:'진행 중', done:'완료'};
+const PRI = {high:'높음', mid:'보통', low:'낮음'};
+const KINDS = [['meet','회의'],['due','마감'],['show','발표'],['fb','피드백'],['etc','기타']];
+const KIND = Object.fromEntries(KINDS);
+const ART_CATS = ['캐릭터','몬스터','배경','건물','무기','오브젝트','UI','레퍼런스'];
+const PALETTE = ['#2f87d0','#cf3b27','#23804f','#c68a14','#7c5cd6','#0f9aa6','#d0457f','#6b7385'];
+const IMG_TYPES = ['image/png','image/jpeg','image/gif','image/webp'];
+const VIEWS = [['overview','개요'],['calendar','캘린더'],['timeline','타임라인'],['kanban','칸반'],['todo','할 일'],['art','아트 바이블'],['reports','작업 보고']];
+const COLS = ['projects','tasks','milestones','events','reports','art','bible','goals'];
+const TEAMS = ['아트팀','프밍팀','기획팀'];
+const TEAM_C = {'아트팀':'var(--green)','프밍팀':'var(--blue)','기획팀':'var(--violet)'};
+const teamOpts = () => TEAMS.map(t => [t, t]);
+const REP_TEAMS = [...TEAMS, '공통'];
+TEAM_C['공통'] = 'var(--slate)';
+const tchip = t => REP_TEAMS.includes(t) ? `<span class="tchip" style="--c:${TEAM_C[t]}">${t}</span>` : '';
+const byText = x => x && x.by ? `${x.by}${x.team ? ' · ' + x.team : ''}` : '';
+const range = (a, b) => { const f = s => { const d = parse(s); return `${d.getMonth()+1}월 ${d.getDate()}`; }; return a === b || !b ? f(a) : `${f(a)} - ${f(b)}`; };
+
+/* ---------- 상태 ---------- */
+const S = {
+  d: Object.fromEntries(COLS.map(c => [c, []])),
+  team: [],
+  loaded: new Set(),
+  dbState: 'loading',
+  view: 'overview',
+  cal: {mode: store.get('calMode') || 'month', anchor: today()},
+  tl: {anchor: today(), team: '', hideDone: false},
+  kb: {project: '', who: '', team: ''},
+  art: {cat: ''},
+  rep: {who: '', project: '', team: ''}
+};
+let db = null, assets = null, canWrite = false, myId = null;
+
+let me = null;
+try { me = JSON.parse(store.get('me') || 'null'); } catch {}
+if (!me || !me.name || !TEAMS.includes(me.team)) me = null;
+if (store.get('view') === 'gantt') store.set('view', 'timeline');
+const hashView = (location.hash || '').slice(1).replace(/^gantt$/, 'timeline');
+S.view = VIEWS.some(v => v[0] === hashView) ? hashView : (VIEWS.some(v => v[0] === store.get('view')) ? store.get('view') : 'overview');
+
+const proj = id => S.d.projects.find(p => p.id === id);
+const projsSorted = () => [...S.d.projects].sort((a,b) => (a.order ?? 99) - (b.order ?? 99) || String(a.name).localeCompare(String(b.name)));
+const pchip = p => p ? `<span class="pchip" style="--c:${esc(p.color || PALETTE[7])}">${esc(p.name)}</span>` : '';
+const stPill = s => `<span class="st ${esc(s)}">${esc(STATUS[s] || s)}</span>`;
+const dueTag = t => {
+  if (!t.due) return '';
+  const late = t.status !== 'done' && t.due < today();
+  return `<span class="due ${late ? 'late' : ''}">${late ? '지남 ' : ''}${short(t.due)}</span>`;
+};
+const memberNames = () => {
+  const set = new Set(S.team.map(m => m.name).filter(Boolean));
+  if (me) set.add(me.name);
+  S.d.tasks.forEach(t => { t.assignee && set.add(t.assignee); t.by && set.add(t.by); });
+  S.d.reports.forEach(r => r.member && set.add(r.member));
+  return [...set];
+};
+const rosterTeam = name => { const m = S.team.find(x => x.name === name); return m && TEAMS.includes(m.team) ? m.team : ''; };
+const loading = c => S.dbState === 'loading' || (S.dbState === 'ok' && !S.loaded.has(c));
+
+/* ---------- 쓰기 ---------- */
+function guard(){
+  if (!db) { toast('저장소에 연결되지 않았어요. claude.ai에 로그인한 상태로 열어 주세요.'); return false; }
+  if (!canWrite) { toast('보기 전용 계정이라 수정할 수 없어요.'); return false; }
+  return true;
+}
+function dbErr(e){
+  const code = e && e.code;
+  if (code === 'invalid_argument') { canWrite = false; paintChrome(); render(); return '이 계정에는 수정 권한이 없어요. 보기 전용으로 전환했어요.'; }
+  if (code === 'quota_exceeded') return '저장 공간이 가득 찼어요. 오래된 항목을 지운 뒤 다시 시도해 주세요.';
+  if (code === 'resource_exhausted') return '요청이 너무 많아요. 잠시 후 다시 시도해 주세요.';
+  return '저장하지 못했어요. 네트워크를 확인하고 다시 시도해 주세요.';
+}
+async function save(col, id, data){
+  try {
+    if (id) await db.doc(`${col}/${id}`).update(data);
+    else await db.collection(col).add(data);
+  } catch (e) { throw new Error(dbErr(e)); }
+}
+async function remove(col, id){
+  try { await db.doc(`${col}/${id}`).delete(); } catch (e) { throw new Error(dbErr(e)); }
+}
+async function uploadFiles(files){
+  const ids = [];
+  if (!files.length) return ids;
+  if (!assets) throw new Error('이미지를 올릴 권한이 없어요. 편집 권한이 있는 팀원에게 부탁해 주세요.');
+  for (const f of files) {
+    if (!IMG_TYPES.includes(f.type)) throw new Error(`${f.name}: PNG, JPG, GIF, WEBP만 올릴 수 있어요.`);
+    if (f.size > 20 * 1024 * 1024) throw new Error(`${f.name}: 20MB 이하 파일만 올릴 수 있어요.`);
+    try { const r = await assets.upload(f); ids.push(r.id); }
+    catch (e) {
+      const m = {too_large:'파일이 20MB를 넘어요.', unsupported_type:'지원하지 않는 형식이에요.', quota_or_state:'이미지 저장 공간이 가득 찼어요.', rate_limited:'잠시 후 다시 올려 주세요.'}[e && e.code];
+      throw new Error(`${f.name}: ${m || '업로드하지 못했어요.'}`);
+    }
+  }
+  return ids;
+}
+async function dropAssets(ids){
+  if (!assets) return;
+  for (const id of ids) { try { await assets.delete(id); } catch {} }
+}
+
+/* ---------- 화면 틀 ---------- */
+const main = $('#main');
+function paintChrome(){
+  $('#tabs').innerHTML = VIEWS.map(([k, l]) => `<button class="tab" type="button" data-view="${k}" ${S.view === k ? 'aria-current="page"' : ''}>${l}</button>`).join('');
+  $('#roBadge').hidden = canWrite || S.dbState !== 'ok';
+  const mb = $('#meBtn');
+  mb.hidden = !(canWrite && S.dbState === 'ok');
+  mb.innerHTML = me ? `${esc(me.name)} ${tchip(me.team)}` : '내 이름 등록';
+  mb.title = me ? '내 이름과 팀 바꾸기' : '글을 쓰기 전에 이름과 팀을 등록해 주세요';
+}
+function setView(v){
+  S.view = v; store.set('view', v); S.sel = null;
+  try { history.replaceState(null, '', '#' + v); } catch {}
+  paintChrome(); render(); window.scrollTo(0, 0);
+}
+function render(){
+  const a = document.activeElement;
+  const keep = a && a.id && main.contains(a) && 'value' in a ? {id: a.id, v: a.value, s: a.selectionStart} : null;
+  let html = '';
+  if (S.dbState === 'none') html += `<div class="notice">공유 저장소에 연결할 수 없어요. claude.ai에 로그인한 상태에서 이 링크를 열면 팀 데이터가 보여요.</div>`;
+  if (S.dbState === 'error') html += `<div class="notice">저장소 연결이 끊겼어요. 페이지를 새로 고쳐 주세요.</div>`;
+  html += (V[S.view] || V.overview)();
+  main.innerHTML = html;
+  main.classList.toggle('selmode', selOn());
+  if (keep) {
+    const n = document.getElementById(keep.id);
+    if (n) { n.value = keep.v; n.focus(); try { n.setSelectionRange(keep.s, keep.s); } catch {} }
+  }
+}
+const addBtn = (act, label, extra = '') => canWrite ? `<button type="button" class="primary" data-act="${act}" ${extra}>${label}</button>` : '';
+const emptyMsg = (c, msg) => loading(c) ? `<p class="empty">불러오는 중…</p>` : `<p class="empty">${msg}</p>`;
+
+/* 여러 개 골라서 삭제 */
+const selOn = () => !!(S.sel && S.sel.view === S.view);
+const selAttr = k => selOn() ? ` data-sel="${esc(k)}"` : '';
+const picked = k => selOn() && S.sel.keys.has(k) ? ' picked' : '';
+const selToggle = () => canWrite && S.dbState === 'ok' && !selOn() ? `<button type="button" class="ghost" data-act="sel-on">선택 삭제</button>` : '';
+function selBar(keys){
+  if (!selOn()) return '';
+  S.sel.visible = keys;
+  const n = S.sel.keys.size, allOn = keys.length && keys.every(k => S.sel.keys.has(k));
+  const del = S.sel.busy ? '삭제하는 중…' : S.sel.armed ? `${n}개를 정말 삭제할까요? 한 번 더 누르세요` : `선택한 ${n}개 삭제`;
+  return `<div class="selbar" role="region" aria-label="선택 삭제">
+    <b>${n ? `${n}개 선택됨` : '지울 항목을 눌러서 고르세요'}</b>
+    <button type="button" class="ghost" data-act="${allOn ? 'sel-none' : 'sel-all'}">${allOn ? '선택 해제' : `보이는 것 모두 선택 (${keys.length})`}</button>
+    <span class="sp"></span>
+    <button type="button" class="danger ${S.sel.armed ? 'armed' : ''}" data-act="sel-del" ${n && !S.sel.busy ? '' : 'disabled'}>${del}</button>
+    <button type="button" class="ghost" data-act="sel-off" ${S.sel.busy ? 'disabled' : ''}>끝내기</button>
+  </div>`;
+}
+async function delSelected(){
+  if (!guard() || !S.sel || S.sel.busy) return;
+  S.sel.busy = true; render();
+  let ok = 0, fail = 0;
+  for (const k of [...S.sel.keys]) {
+    const i = k.indexOf(':'), col = k.slice(0, i), id = k.slice(i + 1);
+    const doc = byId(col, id);
+    try {
+      await remove(col, id);
+      if (col === 'art' && doc && doc.assetId) await dropAssets([doc.assetId]);
+      ok++;
+    } catch { fail++; }
+  }
+  S.sel = null; render();
+  toast(fail ? `${ok}개를 삭제했고 ${fail}개는 삭제하지 못했어요.` : `${ok}개를 삭제했어요.`);
+}
+
+/* ---------- 화면들 ---------- */
+const V = {};
+
+/* 팀 구성: 명단(settings/team)의 역할 글자로 아트팀 파트를 나눔 */
+const ART_PARTS = [
+  ['3D', '캐릭터', r => /3D/i.test(r) && /캐릭터/.test(r) && !/소품/.test(r)],
+  ['3D', '캐릭터 소품', r => /3D/i.test(r) && /캐릭터/.test(r) && /소품/.test(r)],
+  ['3D', '배경', r => /3D/i.test(r) && /배경/.test(r) && !/소품/.test(r)],
+  ['3D', '배경 소품', r => /3D/i.test(r) && /배경/.test(r) && /소품/.test(r)],
+  ['3D', '애니메이션', r => /애니/.test(r)],
+  ['2D', '캐릭터', r => /2D/i.test(r) && /캐릭터/.test(r)],
+  ['2D', '배경 원화', r => /2D/i.test(r) && /배경/.test(r)],
+  ['기타', 'UI', r => /\bUI\b/i.test(r)]
+];
+const artPart = role => ART_PARTS.find(([, , f]) => f(role || '')) || ['기타', '미정'];
+const isLead = m => /팀장/.test(m.role || '');
+const nameList = ms => ms.map(m => `<span class="${isLead(m) ? 'lead' : ''}"${isLead(m) ? ' title="팀장"' : ''}>${esc(m.name)}</span>`).join(', ');
+function crewPanel(){
+  const head = `<div class="ph"><h2>팀 구성</h2><span class="cnt">총 ${S.team.length}명</span><span class="sp"></span><button type="button" class="linkbtn" data-act="team-roster">팀원 명단</button></div>`;
+  if (!S.team.length) return `<section class="panel full">${head}<p class="empty">팀원 명단이 비어 있어요. <b>팀원 명단</b>에서 이름을 넣어 주세요.</p></section>`;
+  const col = (t, body, n) => `<div class="crew-t" style="--c:${TEAM_C[t]}"><div class="crew-h"><span class="tchip" style="--c:${TEAM_C[t]}">${t}</span><b>${n}</b><span class="muted">명</span></div>${body}</div>`;
+  const of = t => S.team.filter(m => m.team === t);
+  const art = of('아트팀');
+  const [g3d, g2d, gEtc] = ['3D', '2D', '기타'].map(g => {
+    const rows = [...ART_PARTS.filter(p => p[0] === g).map(p => p[1]), ...(g === '기타' ? ['미정'] : [])].map(label => {
+      const ms = art.filter(m => { const [pg, pl] = artPart(m.role); return pg === g && pl === label; });
+      return ms.length ? `<div class="crew-r"><span class="nm">${g === '기타' ? '' : g + ' '}${label}</span><span class="num">${ms.length}명</span><span class="crew-n">${nameList(ms)}</span></div>` : '';
+    }).join('');
+    const n = art.filter(m => artPart(m.role)[0] === g).length;
+    return rows ? `<div><div class="crew-k">${g} · ${n}명</div>${rows}</div>` : '';
+  });
+  const groups = [g3d, `${g2d}${gEtc}`].filter(Boolean).map(x => `<div>${x}</div>`).join('');
+  const none = S.team.filter(m => !TEAMS.includes(m.team));
+  return `<section class="panel full">${head}<div class="crew">
+    ${col('기획팀', `<div class="crew-n">${nameList(of('기획팀')) || '<span class="muted">없음</span>'}</div>`, of('기획팀').length)}
+    ${col('아트팀', `<div class="crew-g">${groups || '<span class="muted">없음</span>'}</div>`, art.length)}
+    ${col('프밍팀', `<div class="crew-n">${nameList(of('프밍팀')) || '<span class="muted">없음</span>'}</div>`, of('프밍팀').length)}
+  </div>${none.length ? `<p class="empty">팀 미지정 ${none.length}명: ${nameList(none)}</p>` : ''}</section>`;
+}
+
+V.overview = () => {
+  const t = today(), d = parse(t);
+  const in7 = iso(addDays(d, 7)), in14 = iso(addDays(d, 14));
+  const open = S.d.tasks.filter(x => x.status !== 'done');
+  const late = open.filter(x => x.due && x.due < t).sort((a,b) => a.due.localeCompare(b.due));
+  const soon = open.filter(x => x.due && x.due >= t && x.due <= in7).sort((a,b) => a.due.localeCompare(b.due));
+  const doing = open.filter(x => x.status === 'doing');
+  const ups = [
+    ...S.d.events.filter(e => isDate(e.date) && e.date >= t && e.date <= in14).map(e => ({date:e.date, title:e.title, k:e.kind || 'etc', act:'edit-event', id:e.id, time:e.time})),
+    ...S.d.milestones.filter(m => isDate(m.date) && m.date >= t && m.date <= in14).map(m => ({date:m.date, title:m.title, ms:true, p:proj(m.projectId), act:'edit-ms', id:m.id}))
+  ].sort((a,b) => a.date.localeCompare(b.date) || String(a.time||'').localeCompare(String(b.time||'')));
+  const recent = [...S.d.reports].sort((a,b) => String(b.date).localeCompare(String(a.date)) || (b.createdAt||0) - (a.createdAt||0)).slice(0, 3);
+  const trow = x => `<button type="button" class="trow" data-act="edit-task" data-id="${esc(x.id)}">${stPill(x.status)}<span class="tt">${esc(x.title)}</span>${pchip(proj(x.projectId))}${dueTag(x)}</button>`;
+  const dueList = [...late, ...soon];
+  const groups = [...projsSorted()].map(p => {
+    const ts = S.d.tasks.filter(x => x.projectId === p.id);
+    const done = ts.filter(x => x.status === 'done').length;
+    const pct = ts.length ? Math.round(done / ts.length * 100) : 0;
+    return `<div class="prog">${pchip(p)}<span class="num muted">${done}/${ts.length} · ${pct}%</span><div class="meter" role="img" aria-label="${esc(p.name)} ${pct}% 완료"><i style="--c:${esc(p.color)};width:${pct}%"></i></div></div>`;
+  }).join('');
+  return `
+  <section class="today-line">
+    <h1 class="vtitle">${d.getMonth()+1}월 ${d.getDate()}일 ${DOWL[d.getDay()]}</h1>
+    <div class="kpis">
+      <span>진행 중 <b>${doing.length}</b></span>
+      <span class="${late.length ? 'late' : ''}">마감 지남 <b>${late.length}</b></span>
+      <span>7일 안 마감 <b>${soon.length}</b></span>
+      <span>남은 할 일 <b>${open.length}</b></span>
+    </div>
+  </section>
+  <div class="ov">
+    ${crewPanel()}
+    <section class="panel"><div class="ph"><h2>마감</h2><span class="cnt">지남 + 7일 안</span></div>
+      <div class="rows">${dueList.length ? dueList.map(trow).join('') : emptyMsg('tasks', '7일 안에 마감되는 할 일이 없어요.')}</div></section>
+    <section class="panel"><div class="ph"><h2>진행 중</h2><span class="cnt">${doing.length}</span></div>
+      <div class="rows">${doing.length ? doing.map(trow).join('') : emptyMsg('tasks', '진행 중인 할 일이 없어요. 칸반에서 카드를 <b>진행 중</b>으로 옮겨 보세요.')}</div></section>
+    <section class="panel"><div class="ph"><h2>다가오는 일정</h2><span class="cnt">14일</span><span class="sp"></span><button type="button" class="linkbtn" data-view="calendar">캘린더</button></div>
+      <div class="rows">${ups.length ? ups.map(u => `<button type="button" class="up" data-act="${u.act}" data-id="${esc(u.id)}"><span class="d">${short(u.date)} ${DOW[parse(u.date).getDay()]}</span><span class="tt">${u.ms ? '◆ ' : ''}${esc(u.title)}</span>${u.ms ? pchip(u.p) : `<span class="st">${esc(KIND[u.k] || '기타')}</span>`}</button>`).join('') : emptyMsg('events', '14일 안에 잡힌 일정이 없어요.')}</div></section>
+    <section class="panel"><div class="ph"><h2>프로젝트 진행률</h2><span class="sp"></span><button type="button" class="linkbtn" data-view="todo">할 일 목록</button></div>
+      <div>${groups || emptyMsg('projects', '프로젝트가 없어요. <b>할 일</b> 화면에서 프로젝트를 추가해 주세요.')}</div></section>
+    <section class="panel full"><div class="ph"><h2>최근 작업 보고</h2><span class="sp"></span><button type="button" class="linkbtn" data-view="reports">전체 보기</button></div>
+      <div class="rows">${recent.length ? recent.map(r => `<button type="button" class="up" data-act="open-report" data-id="${esc(r.id)}"><span class="d">${isDate(r.date) ? short(r.date) : ''}</span><span class="tt">${esc(r.title)}</span><span class="who-s muted">${esc(r.member || '')}</span>${tchip(r.team)}${(r.images||[]).length ? `<span class="num muted">사진 ${r.images.length}</span>` : ''}</button>`).join('') : emptyMsg('reports', '아직 작업 보고가 없어요. <b>작업 보고</b> 화면에서 오늘 만든 것을 스크린샷과 함께 올려 보세요.')}</div></section>
+    ${goalsPanel(t.slice(0, 7), 'ov')}
+  </div>`;
+};
+
+function monthDue(month){
+  const m = Number(month.slice(5, 7)), t = today();
+  const inM = d => isDate(d) && d.slice(0, 7) === month;
+  const rows = [];
+  S.d.tasks.forEach(x => { if (inM(x.due)) rows.push({d: x.due, kind: stPill(x.status || 'todo'), title: x.title, act: 'edit-task', id: x.id, done: x.status === 'done', p: proj(x.projectId), team: x.team, by: x.by, sub: isDate(x.start) && x.start !== x.due ? `${short(x.start)}부터` : ''}); });
+  S.d.events.forEach(e => {
+    if (!isDate(e.date)) return;
+    const end = isDate(e.end) && e.end > e.date ? e.end : e.date;
+    if (inM(end) || inM(e.date)) rows.push({d: inM(end) ? end : e.date, kind: `<span class="st k${esc(e.kind || 'etc')} kst">${esc(KIND[e.kind] || '기타')}</span>`, title: e.title, act: 'edit-event', id: e.id, done: end < t, p: null, team: e.team, by: e.by, sub: end !== e.date ? `${short(e.date)}부터` : (e.time || '')});
+  });
+  S.d.milestones.forEach(ms => { if (inM(ms.date)) rows.push({d: ms.date, kind: '<span class="st">◆ 마일스톤</span>', title: ms.title, act: 'edit-ms', id: ms.id, done: ms.date < t, p: proj(ms.projectId), team: ms.team, by: ms.by, sub: ''}); });
+  rows.sort((a, b) => a.d.localeCompare(b.d));
+  const open = rows.filter(r => !r.done).length;
+  return `<section class="panel">
+    <div class="ph"><h2>${m}월에 마감되는 일 · 일정</h2><span class="cnt">${rows.length}건 · 남은 것 ${open}</span></div>
+    <div class="rows">${rows.length ? rows.map(r => {
+      const late = !r.done && r.d < t && r.act === 'edit-task';
+      return `<button type="button" class="drow ${r.done ? 'done' : ''}" data-act="${r.act}" data-id="${esc(r.id)}">
+        <span class="dd ${late ? 'late' : ''} ${r.d === t ? 'now' : ''}"><b>${parse(r.d).getDate()}</b><small>${DOW[parse(r.d).getDay()]}</small></span>
+        <span class="dmain"><span class="dt">${esc(r.title)}</span><span class="dm">${r.kind}${pchip(r.p)}${tchip(r.team)}${r.sub ? `<span class="muted">${esc(r.sub)}</span>` : ''}${late ? '<span class="due late">마감 지남</span>' : ''}${r.by ? `<span class="byline">입력 ${esc(r.by)}</span>` : ''}</span></span>
+      </button>`;
+    }).join('') : emptyMsg('tasks', `${m}월에 마감되는 할 일이나 일정이 없어요.`)}</div>
+  </section>`;
+}
+function goalsPanel(month, where){
+  const m = Number(month.slice(5, 7));
+  const gs = S.d.goals.filter(g => g.month === month).sort((a, b) => (a.createdAt||0) - (b.createdAt||0));
+  const done = gs.filter(g => g.done).length;
+  const pct = gs.length ? Math.round(done / gs.length * 100) : 0;
+  return `<section class="panel full" id="goals-${where}">
+    <div class="ph"><h2>${m}월 목표</h2><span class="cnt">${done}/${gs.length} 완료</span>${gs.length ? `<span class="gbar2" role="img" aria-label="${pct}% 완료"><i style="width:${pct}%"></i></span>` : ''}</div>
+    <div class="rows">${gs.length ? gs.map(g => `<div class="goal ${g.done ? 'done' : ''}">
+        <button type="button" class="gt" data-act="edit-goal" data-id="${esc(g.id)}">${esc(g.title)}</button>
+        <span class="gby">${g.done && g.doneBy ? `${esc(g.doneBy)} 완료${isDate(g.doneAt) ? ' · ' + short(g.doneAt) : ''}` : esc(byText(g))}</span>
+        ${canWrite ? `<button type="button" class="gdone" data-act="goal-done" data-id="${esc(g.id)}" aria-pressed="${!!g.done}" title="${g.done ? '누르면 완료를 취소해요' : '완료로 표시'}">${g.done ? '✓ 완료' : '완료'}</button>` : (g.done ? '<span class="st done">완료</span>' : '')}
+      </div>`).join('') : emptyMsg('goals', `${m}월 목표가 없어요.${canWrite ? ' 아래 칸에 이번 달에 끝낼 목표를 적어 주세요.' : ''}`)}</div>
+    ${canWrite ? `<form class="qa" data-goal-add="${esc(month)}"><input id="goal-${where}-${esc(month)}" placeholder="${m}월 목표 추가 후 Enter" aria-label="${m}월 목표 추가" autocomplete="off"><button type="submit">추가</button></form>` : ''}
+  </section>`;
+}
+
+function calItems(skipMulti){
+  const map = {};
+  const put = (d, it) => { if (!isDate(d)) return; (map[d] = map[d] || []).push(it); };
+  S.d.events.forEach(e => {
+    if (!isDate(e.date)) return;
+    const end = isDate(e.end) && e.end > e.date ? e.end : e.date;
+    const span = Math.min(diff(e.date, end), 90);
+    if (skipMulti && span) return;
+    const tip = `${e.title} · ${range(e.date, end)}${byText(e) ? ' · 입력 ' + byText(e) : ''}`;
+    for (let i = 0; i <= span; i++) {
+      const ds = iso(addDays(parse(e.date), i));
+      const lab = i === 0 ? `${e.time ? `<span class="tm">${esc(e.time)}</span>` : ''}${esc(e.title)}${span ? ` <span class="tm">~${short(end)}</span>` : ''}` : `↳ ${esc(e.title)}`;
+      put(ds, {html: `<button type="button" class="it k${esc(e.kind||'etc')}" data-act="edit-event" data-id="${esc(e.id)}" title="${esc(tip)}">${lab}</button>`, sort: (span ? '0' : '1') + (e.time || '')});
+    }
+  });
+  S.d.milestones.forEach(m => { const p = proj(m.projectId); put(m.date, {html: `<button type="button" class="it ms" style="--k:${esc(p ? p.color : 'var(--ink)')}" data-act="edit-ms" data-id="${esc(m.id)}" title="마일스톤: ${esc(m.title)}">${esc(m.title)}</button>`, sort: '0'}); });
+  S.d.tasks.forEach(t => { if (!t.due) return; const p = proj(t.projectId); put(t.due, {html: `<button type="button" class="it tk ${t.status === 'done' ? 'fin' : ''}" style="--k:${esc(p ? p.color : 'var(--slate)')}" data-act="edit-task" data-id="${esc(t.id)}" title="마감: ${esc(t.title)}">마감 · ${esc(t.title)}</button>`, sort: '2'}); });
+  Object.values(map).forEach(a => a.sort((x, y) => x.sort.localeCompare(y.sort)));
+  return map;
+}
+V.calendar = () => {
+  const a = parse(S.cal.anchor), t = today();
+  const month = S.cal.mode === 'month';
+  const items = calItems(month);
+  let title, body;
+  if (month) {
+    const first = new Date(a.getFullYear(), a.getMonth(), 1);
+    const dim = new Date(a.getFullYear(), a.getMonth() + 1, 0).getDate();
+    const weeks = Math.ceil((first.getDay() + dim) / 7);
+    const start = sunday(first);
+    title = `${a.getFullYear()}년 ${a.getMonth()+1}월`;
+    // 여러 날짜에 걸친 일정: 주마다 막대로 이어 그리고, 겹치면 아래 줄(레인)로 내림
+    const multi = S.d.events.filter(e => isDate(e.date) && isDate(e.end) && e.end > e.date)
+      .map(e => ({e, end: iso(addDays(parse(e.date), Math.min(diff(e.date, e.end), 90)))}))
+      .sort((x, y) => x.e.date.localeCompare(y.e.date) || y.end.localeCompare(x.end) || String(x.e.time || '').localeCompare(String(y.e.time || '')));
+    const MAXL = 3;
+    let rows = '';
+    for (let w = 0; w < weeks; w++) {
+      const ws = iso(addDays(start, w * 7)), we = iso(addDays(start, w * 7 + 6));
+      const laneEnd = [], bars = [], hidden = {};
+      multi.filter(m => m.e.date <= we && m.end >= ws).forEach(({e, end}) => {
+        const c0 = Math.max(0, diff(ws, e.date)), c1 = Math.min(6, diff(ws, end));
+        let L = laneEnd.findIndex(x => x < c0);
+        if (L < 0) L = laneEnd.length;
+        laneEnd[L] = c1;
+        if (L >= MAXL) { for (let c = c0; c <= c1; c++) hidden[c] = (hidden[c] || 0) + 1; return; }
+        const cut = [e.date < ws ? 'cut-l' : '', end > we ? 'cut-r' : ''].join(' ');
+        const tip = `${e.title} · ${range(e.date, end)}${byText(e) ? ' · 입력 ' + byText(e) : ''}`;
+        const lab = `${e.date >= ws && e.time ? `<span class="tm">${esc(e.time)}</span> ` : ''}${esc(e.title)}`;
+        bars.push(`<button type="button" class="it span k${esc(e.kind || 'etc')} ${cut}" style="--c0:${c0};--n:${c1 - c0 + 1};--lane:${L}" data-act="edit-event" data-id="${esc(e.id)}" title="${esc(tip)}">${lab}</button>`);
+      });
+      const lanes = Math.min(laneEnd.length, MAXL);
+      let cells = '';
+      for (let i = 0; i < 7; i++) {
+        const d = addDays(start, w * 7 + i), ds = iso(d), its = items[ds] || [];
+        const out = d.getMonth() !== a.getMonth();
+        const room = Math.max(1, 3 - lanes);
+        const shown = its.slice(0, room).map(x => x.html).join('');
+        const extra = Math.max(0, its.length - room) + (hidden[i] || 0);
+        const more = extra ? `<button type="button" class="more" data-act="cal-week" data-date="${ds}">+${extra} 더 보기</button>` : '';
+        const dcls = d.getDay() === 0 ? 'sun' : d.getDay() === 6 ? 'sat' : '';
+        cells += `<div class="cell ${out ? 'out' : ''} ${ds === t ? 'today' : ''}" ${canWrite ? `data-act="new-event" data-date="${ds}" title="${md(ds)}에 일정 추가"` : ''}><span class="dn ${dcls}">${d.getDate()}</span>${lanes ? '<span class="lanes" aria-hidden="true"></span>' : ''}${shown}${more}</div>`;
+      }
+      rows += `<div class="cal-w" style="--lanes:${lanes}">${cells}${bars.join('')}</div>`;
+    }
+    body = `<div class="cal"><div class="cal-h">${DOW.map((w, i) => `<div class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${w}</div>`).join('')}</div><div class="cal-g">${rows}</div></div>`;
+  } else {
+    const s = sunday(a), e = addDays(s, 6);
+    title = `${s.getMonth()+1}월 ${s.getDate()}일 – ${e.getMonth()+1}월 ${e.getDate()}일`;
+    let cols = '';
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(s, i), ds = iso(d), its = items[ds] || [];
+      cols += `<div class="wcol ${ds === t ? 'today' : ''}"><div class="wh"><b>${d.getDate()}</b><span class="${i === 0 ? 'sun' : i === 6 ? 'sat' : ''}">${DOW[i]}</span></div><div class="wl">${its.map(x => x.html).join('')}${canWrite ? `<button type="button" class="more" data-act="new-event" data-date="${ds}">+ 일정</button>` : ''}</div></div>`;
+    }
+    body = `<div class="week">${cols}</div>`;
+  }
+  return `
+  <div class="bar">
+    <h1 class="vtitle">${title}</h1><span class="sp"></span>
+    <div class="seg" role="group" aria-label="보기"><button type="button" data-act="cal-mode" data-mode="month" aria-pressed="${month}">월</button><button type="button" data-act="cal-mode" data-mode="week" aria-pressed="${!month}">주</button></div>
+    <button type="button" class="icon" data-act="cal-prev" aria-label="이전">‹</button>
+    <button type="button" class="ghost" data-act="cal-today">오늘</button>
+    <button type="button" class="icon" data-act="cal-next" aria-label="다음">›</button>
+    ${canWrite ? `<button type="button" class="ghost" data-act="new-ms">+ 마일스톤</button>` : ''}
+    ${addBtn('new-event', '+ 일정', `data-date="${today()}"`)}
+  </div>
+  <div class="legend">${KINDS.map(([k, l]) => `<span class="k${k}">${l}</span>`).join('')}<span style="--k:var(--ink-3)">◆ 마일스톤 · 점선은 할 일 마감 · ↳ 이어지는 일정</span></div>
+  <div class="calwrap">
+    <div class="calmain">
+      ${body}
+      ${monthDue(S.cal.anchor.slice(0, 7))}
+    </div>
+    <aside class="calside">${goalsPanel(S.cal.anchor.slice(0, 7), 'cal')}</aside>
+  </div>`;
+};
+
+V.kanban = () => {
+  const f = S.kb;
+  const ts = S.d.tasks.filter(t => (!f.project || (f.project === '_none' ? !proj(t.projectId) : t.projectId === f.project)) && (!f.who || t.assignee === f.who) && (!f.team || t.team === f.team));
+  const col = st => {
+    const list = ts.filter(t => (t.status || 'todo') === st).sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999') || (a.createdAt||0) - (b.createdAt||0));
+    return `<section class="kcol" data-drop="${st}"><div class="ph"><h2>${STATUS[st]}</h2><span class="cnt">${list.length}</span></div><div class="klist">${list.length ? list.map(t => `
+      <button type="button" class="card ${st}${picked('tasks:' + t.id)}" data-act="edit-task" data-id="${esc(t.id)}"${selAttr('tasks:' + t.id)} ${canWrite && !selOn() ? 'draggable="true"' : ''}>
+        <span class="ct">${t.priority === 'high' ? '<span class="pri-high" title="우선순위 높음">! </span>' : ''}${esc(t.title)}</span>
+        <span class="cm">${pchip(proj(t.projectId))}${tchip(t.team)}${t.assignee ? `<span>담당 ${esc(t.assignee)}</span>` : ''}${dueTag(t)}</span>
+        ${isDate(t.start) || isDate(t.due) ? `<span class="byline">${range(isDate(t.start) ? t.start : t.due, isDate(t.due) ? t.due : t.start)}${t.by ? ' · 입력 ' + esc(t.by) : ''}</span>` : (t.by ? `<span class="byline">입력 ${esc(t.by)}</span>` : '')}
+      </button>`).join('') : `<p class="empty">${loading('tasks') ? '불러오는 중…' : (canWrite ? '카드를 여기로 끌어 놓으세요.' : '비어 있어요.')}</p>`}</div></section>`;
+  };
+  const names = memberNames();
+  return `
+  <div class="bar">
+    <h1 class="vtitle">칸반</h1><span class="sp"></span>
+    <select class="sel" id="kbWho" data-filter="kb.who" aria-label="담당자 거르기"><option value="">모든 담당자</option>${names.map(n => `<option ${f.who === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
+    ${selToggle()}
+    ${addBtn('new-task', '+ 할 일')}
+  </div>
+  <div class="fgroup">
+    <span class="flab">프로젝트</span>
+    <div class="chips" role="group" aria-label="프로젝트">
+      <button type="button" class="chip" data-act="kb-set" data-key="project" data-val="" aria-pressed="${!f.project}">전체</button>
+      ${projsSorted().map(p => `<button type="button" class="chip dot" style="--c:${esc(p.color)}" data-act="kb-set" data-key="project" data-val="${esc(p.id)}" aria-pressed="${f.project === p.id}">${esc(p.name)}</button>`).join('')}
+      <button type="button" class="chip" data-act="kb-set" data-key="project" data-val="_none" aria-pressed="${f.project === '_none'}">프로젝트 없음</button>
+    </div>
+    <span class="flab">팀</span>
+    <div class="chips" role="group" aria-label="팀">
+      <button type="button" class="chip" data-act="kb-set" data-key="team" data-val="" aria-pressed="${!f.team}">전체</button>
+      ${TEAMS.map(t => `<button type="button" class="chip dot" style="--c:${TEAM_C[t]}" data-act="kb-set" data-key="team" data-val="${t}" aria-pressed="${f.team === t}">${t}</button>`).join('')}
+    </div>
+  </div>
+  <div class="kb">${col('todo')}${col('doing')}${col('done')}</div>
+  ${selBar(ts.map(t => 'tasks:' + t.id))}`;
+};
+
+V.timeline = () => {
+  const f = S.tl;
+  const narrow = matchMedia('(max-width:560px)').matches;
+  const DAYS = narrow ? 28 : 42, W = narrow ? 36 : 46, RH = 44;
+  const start = addDays(sunday(parse(f.anchor)), -7);
+  const s0 = iso(start), s1 = iso(addDays(start, DAYS - 1)), t = today();
+  const tw = DAYS * W;
+  let head = '', bg = '';
+  for (let i = 0; i < DAYS; i++) {
+    const d = addDays(start, i), wd = d.getDay();
+    if (i === 0 || d.getDate() === 1) head += `<span class="tl-m" style="left:${i * W}px">${d.getMonth()+1}월 ${d.getFullYear()}</span>`;
+    head += `<span class="tl-d ${wd === 0 ? 'sun' : wd === 6 ? 'sat' : ''} ${iso(d) === t ? 'td' : ''}" style="left:${i * W}px"><small>${DOW[wd]}</small><span>${d.getDate()}</span></span>`;
+    if (wd === 0 || wd === 6) bg += `<i class="we" style="left:${i * W}px"></i>`;
+    if (wd === 0 && i) bg += `<i class="wk" style="left:${i * W}px"></i>`;
+  }
+  const ti = diff(s0, t);
+  if (ti >= 0 && ti < DAYS) bg += `<i class="now" style="left:${ti * W}px"></i>`;
+  const items = [];
+  S.d.tasks.forEach(x => {
+    if (!isDate(x.start) && !isDate(x.due)) return;
+    const a = isDate(x.start) ? x.start : x.due, b = isDate(x.due) ? x.due : x.start;
+    const p = proj(x.projectId);
+    items.push({act:'edit-task', id:x.id, title:x.title, lo: a < b ? a : b, hi: a < b ? b : a, team:x.team, by:x.by, status:x.status || 'todo', c: TEAM_C[x.team] || (p ? p.color : 'var(--slate)')});
+  });
+  S.d.events.forEach(e => {
+    if (!isDate(e.date)) return;
+    const end = isDate(e.end) && e.end > e.date ? e.end : e.date;
+    items.push({act:'edit-event', id:e.id, title:e.title, lo:e.date, hi:end, team:e.team, by:e.by, status:'ev', c: TEAM_C[e.team] || 'var(--slate)'});
+  });
+  const shown = items.filter(x => (!f.team || x.team === f.team) && !(f.hideDone && x.status === 'done'));
+  const inRange = shown.filter(x => x.hi >= s0 && x.lo <= s1).sort((a, b) => a.lo.localeCompare(b.lo) || a.hi.localeCompare(b.hi));
+  const before = shown.filter(x => x.hi < s0).length, after = shown.filter(x => x.lo > s1).length;
+  const bars = inRange.map((x, i) => {
+    const L = Math.max(0, diff(s0, x.lo)), R = Math.min(DAYS - 1, diff(s0, x.hi));
+    const cls = [x.status, x.lo < s0 ? 'cut-l' : '', x.hi > s1 ? 'cut-r' : ''].join(' ');
+    const who = x.by ? ` · ${x.by}${x.team ? ' ' + x.team : ''}` : (x.team ? ' · ' + x.team : '');
+    return `<button type="button" class="tb ${cls}" style="--c:${esc(x.c)};left:${L * W + 2}px;top:${i * RH + 6}px;width:${(R - L + 1) * W - 4}px" data-act="${x.act}" data-id="${esc(x.id)}" title="${esc(x.title)} · ${range(x.lo, x.hi)}${esc(who)}"><b>${esc(x.title)}</b><small>${range(x.lo, x.hi)}${esc(who)}</small></button>`;
+  }).join('');
+  const undated = S.d.tasks.filter(x => !isDate(x.start) && !isDate(x.due) && (!f.team || x.team === f.team));
+  const s = parse(s0), e = parse(s1);
+  return `
+  <div class="bar">
+    <h1 class="vtitle">타임라인</h1><span class="muted num">${s.getMonth()+1}/${s.getDate()} – ${e.getMonth()+1}/${e.getDate()}</span><span class="sp"></span>
+    <button type="button" class="icon" data-act="tl-prev" aria-label="2주 앞으로">‹</button>
+    <button type="button" class="ghost" data-act="tl-today">오늘</button>
+    <button type="button" class="icon" data-act="tl-next" aria-label="2주 뒤로">›</button>
+    ${canWrite ? `<button type="button" class="ghost" data-act="new-event" data-date="${t}">+ 일정</button>` : ''}
+    ${addBtn('new-task', '+ 할 일')}
+  </div>
+  <div class="bar">
+    <div class="chips" role="group" aria-label="팀"><button type="button" class="chip" data-act="tl-team" data-team="" aria-pressed="${!f.team}">전체</button>${TEAMS.map(tm => `<button type="button" class="chip" data-act="tl-team" data-team="${tm}" aria-pressed="${f.team === tm}">${tm}</button>`).join('')}</div>
+    <button type="button" class="chip" data-act="tl-done" aria-pressed="${f.hideDone}">완료 숨기기</button>
+    <span class="sp"></span>
+    <div class="glegend">${TEAMS.map(tm => `<span><i style="border-color:${TEAM_C[tm]};background:color-mix(in srgb,${TEAM_C[tm]} 24%,var(--panel))"></i>${tm}</span>`).join('')}<span><i class="l-doing"></i>진행 중</span><span><i class="l-done"></i>완료</span><span><i class="l-ev"></i>일정</span></div>
+  </div>
+  <div class="twrap"><div class="tl-in" style="--tw:${tw}px;--w:${W}px">
+    <div class="tl-head">${head}</div>
+    <div class="tl-body" style="height:${Math.max(inRange.length * RH + 14, 140)}px">
+      <div class="tl-bg">${bg}</div>
+      ${bars || `<p class="empty" style="position:relative">${loading('tasks') ? '불러오는 중…' : '이 기간에 걸친 일정이 없어요. 할 일이나 일정에 <b>시작일</b>과 <b>끝나는 날</b>을 넣으면 막대로 표시돼요.'}</p>`}
+    </div>
+  </div></div>
+  ${before || after ? `<p class="muted">${before ? `‹ 이전 기간 ${before}건` : ''}${before && after ? ' · ' : ''}${after ? `다음 기간 ${after}건 ›` : ''}</p>` : ''}
+  ${undated.length ? `<div class="undated"><span class="muted">날짜 없는 할 일 ${undated.length}건</span>${undated.map(x => `<button type="button" data-act="edit-task" data-id="${esc(x.id)}">${esc(x.title)}</button>`).join('')}</div>` : ''}`;
+};
+
+V.todo = () => {
+  const groups = [...projsSorted().map(p => ({p, id: p.id})), {p: null, id: '_none'}];
+  const secs = groups.map(g => {
+    const ts = S.d.tasks.filter(x => g.p ? x.projectId === g.id : !proj(x.projectId))
+      .sort((a, b) => (a.status === 'done') - (b.status === 'done') || (a.due || '9999').localeCompare(b.due || '9999') || (a.createdAt||0) - (b.createdAt||0));
+    if (!g.p && !ts.length) return '';
+    const done = ts.filter(x => x.status === 'done').length;
+    const rows = ts.map(x => `<div class="trow ${x.status === 'done' ? 'done' : ''}${picked('tasks:' + x.id)}"${selAttr('tasks:' + x.id)}>
+        ${selOn() ? '' : `<input type="checkbox" data-toggle="${esc(x.id)}" ${x.status === 'done' ? 'checked' : ''} ${canWrite ? '' : 'disabled'} aria-label="${esc(x.title)} 완료">`}
+        <button type="button" class="open tt" data-act="edit-task" data-id="${esc(x.id)}" title="${esc(x.title)}${x.by ? ' · 입력 ' + esc(byText(x)) : ''}">${x.priority === 'high' ? '<span class="pri-high">! </span>' : ''}${esc(x.title)}</button>
+        ${x.status === 'doing' ? stPill('doing') : ''}${x.assignee ? `<span class="who-s">${esc(x.assignee)}</span>` : ''}${dueTag(x)}</div>`).join('');
+    return `<section class="panel">
+      <div class="ph">${g.p ? pchip(g.p) : '<h2>프로젝트 없음</h2>'}<span class="cnt">${done}/${ts.length}</span><span class="sp"></span>${g.p && canWrite ? `<button type="button" class="linkbtn" data-act="edit-proj" data-id="${esc(g.id)}">편집</button>` : ''}</div>
+      <div class="rows">${rows || '<p class="empty">할 일이 없어요.</p>'}</div>
+      ${canWrite ? `<form class="qa" data-qa="${esc(g.id)}"><input id="qa-${esc(g.id)}" placeholder="할 일 추가 후 Enter" aria-label="${g.p ? esc(g.p.name) : '프로젝트 없음'}에 할 일 추가" autocomplete="off"><button type="submit">추가</button></form>` : ''}
+    </section>`;
+  }).join('');
+  return `
+  <div class="bar"><h1 class="vtitle">프로젝트별 할 일</h1><span class="sp"></span>${selToggle()}${canWrite ? `<button type="button" class="ghost" data-act="new-proj">+ 프로젝트</button>` : ''}${addBtn('new-task', '+ 할 일')}</div>
+  ${S.d.projects.length || S.d.tasks.length ? `<div class="plist">${secs}</div>` : `<div class="panel">${emptyMsg('projects', '프로젝트가 없어요. <b>+ 프로젝트</b>로 기획, 프로그램, 아트처럼 파트별 프로젝트를 만들어 보세요.')}</div>`}
+  ${selBar(S.d.tasks.map(t => 'tasks:' + t.id))}`;
+};
+
+V.art = () => {
+  const secs = [...S.d.bible].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+  const cat = S.art.cat;
+  const imgs = S.d.art.filter(x => !cat || x.category === cat).sort((a, b) => (b.createdAt||0) - (a.createdAt||0));
+  const counts = Object.fromEntries(ART_CATS.map(c => [c, S.d.art.filter(x => x.category === c).length]));
+  return `
+  <div class="bar"><h1 class="vtitle">아트 바이블</h1><span class="sp"></span>${selToggle()}${canWrite ? `<button type="button" class="ghost" data-act="new-bible">+ 설정 항목</button>` : ''}${assets && canWrite ? `<button type="button" class="primary" data-act="upload-art">+ 이미지 올리기</button>` : ''}</div>
+  <section class="bible">${secs.length ? secs.map(s => `<article class="sec${picked('bible:' + s.id)}"${selAttr('bible:' + s.id)}>
+      <h3>${esc(s.title)}<span class="sp"></span>${canWrite ? `<button type="button" class="linkbtn" data-act="edit-bible" data-id="${esc(s.id)}">편집</button>` : ''}</h3>
+      ${s.body ? `<div class="body">${esc(s.body)}</div>` : ''}
+      ${s.by ? `<span class="byline">입력 ${esc(byText(s))}</span>` : ''}
+      ${(s.colors || []).length ? `<div class="sw">${s.colors.filter(c => /^#[0-9a-f]{3,8}$/i.test(c)).map(c => `<figure><i style="--sw:${c}"></i><figcaption>${esc(c)}</figcaption></figure>`).join('')}</div>` : ''}
+    </article>`).join('') : `<div class="panel">${emptyMsg('bible', '설정 항목이 없어요. 그래픽 컨셉, 색 규칙, 캐릭터 설정 같은 기준을 <b>+ 설정 항목</b>으로 적어 두세요.')}</div>`}</section>
+  <div class="bar"><h2 class="vtitle" style="font-size:22px">컨셉 이미지</h2><span class="muted num">${S.d.art.length}장</span></div>
+  <div class="chips" role="group" aria-label="분류"><button type="button" class="chip" data-act="art-cat" data-cat="" aria-pressed="${!cat}">전체<span class="n">${S.d.art.length}</span></button>${ART_CATS.map(c => `<button type="button" class="chip" data-act="art-cat" data-cat="${c}" aria-pressed="${cat === c}">${c}<span class="n">${counts[c]}</span></button>`).join('')}</div>
+  ${imgs.length ? `<div class="gal">${imgs.map(x => `<button type="button" class="shot${picked('art:' + x.id)}" data-act="view-art" data-id="${esc(x.id)}"${selAttr('art:' + x.id)}>
+      <span class="im"><img src="/_blob/${esc(x.assetId)}" alt="${esc(x.title)}" loading="lazy"></span>
+      <span class="cap"><b>${esc(x.title)}</b><span>${esc(x.category || '')}${x.version ? ' · ' + esc(x.version) : ''}${x.member ? ' · ' + esc(x.member) : ''}${x.team ? ' · ' + esc(x.team) : ''}</span></span>
+    </button>`).join('')}</div>` : `<div class="panel">${emptyMsg('art', cat ? `${esc(cat)} 분류에 올린 이미지가 없어요.` : '올린 이미지가 없어요. <b>+ 이미지 올리기</b>로 컨셉 아트와 레퍼런스를 모아 보세요.')}</div>`}
+  ${selBar([...secs.map(s => 'bible:' + s.id), ...imgs.map(x => 'art:' + x.id)])}`;
+};
+
+V.reports = () => {
+  const f = S.rep;
+  const list = S.d.reports.filter(r => (!f.who || r.member === f.who) && (!f.project || (f.project === '_none' ? !proj(r.projectId) : r.projectId === f.project)) && (!f.team || r.team === f.team))
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)) || (b.createdAt||0) - (a.createdAt||0));
+  const byDate = [];
+  list.forEach(r => { const last = byDate[byDate.length - 1]; if (last && last.date === r.date) last.items.push(r); else byDate.push({date: r.date, items: [r]}); });
+  const names = memberNames();
+  return `
+  <div class="bar">
+    <h1 class="vtitle">작업 보고</h1><span class="muted num">${S.d.reports.length}건</span><span class="sp"></span>
+    <select class="sel" id="repWho" data-filter="rep.who" aria-label="작성자 거르기"><option value="">모든 팀원</option>${names.map(n => `<option ${f.who === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select>
+    ${addBtn('new-report', '+ 보고 쓰기')}
+  </div>
+  <div class="fgroup">
+    <span class="flab">프로젝트</span>
+    <div class="chips" role="group" aria-label="프로젝트">
+      <button type="button" class="chip" data-act="rep-set" data-key="project" data-val="" aria-pressed="${!f.project}">전체</button>
+      ${projsSorted().map(p => `<button type="button" class="chip dot" style="--c:${esc(p.color)}" data-act="rep-set" data-key="project" data-val="${esc(p.id)}" aria-pressed="${f.project === p.id}">${esc(p.name)}</button>`).join('')}
+      <button type="button" class="chip" data-act="rep-set" data-key="project" data-val="_none" aria-pressed="${f.project === '_none'}">프로젝트 없음</button>
+    </div>
+    <span class="flab">팀</span>
+    <div class="chips" role="group" aria-label="팀">
+      <button type="button" class="chip" data-act="rep-set" data-key="team" data-val="" aria-pressed="${!f.team}">전체</button>
+      ${REP_TEAMS.map(t => `<button type="button" class="chip dot" style="--c:${TEAM_C[t]}" data-act="rep-set" data-key="team" data-val="${t}" aria-pressed="${f.team === t}">${t}</button>`).join('')}
+    </div>
+  </div>
+  ${byDate.length ? byDate.map(g => { const d = isDate(g.date) ? parse(g.date) : null; return `<section class="day">
+      <div class="dayh">${d ? `<b>${pad(d.getMonth()+1)}.${pad(d.getDate())}</b><span>${d.getFullYear()} · ${DOWL[d.getDay()]}</span>` : '<b>날짜 없음</b>'}</div>
+      <div class="reps">${g.items.map(r => `<article class="rep" id="rep-${esc(r.id)}">
+        <div class="rep-h"><h3>${esc(r.title)}</h3>${canWrite ? `<button type="button" class="linkbtn" data-act="edit-report" data-id="${esc(r.id)}">편집</button>` : ''}</div>
+        <div class="rep-m">${r.member ? `<span class="by">${esc(r.member)}</span>` : ''}${tchip(r.team)}${pchip(proj(r.projectId))}</div>
+        ${r.body ? `<div class="body">${esc(r.body)}</div>` : ''}
+        ${(r.images || []).length ? `<div class="imgs">${r.images.map((id, i) => `<button type="button" data-act="view-img" data-src="/_blob/${esc(id)}" data-cap="${esc(r.title)} (${i + 1}/${r.images.length})"><img src="/_blob/${esc(id)}" alt="${esc(r.title)} 스크린샷 ${i + 1}" loading="lazy"></button>`).join('')}</div>` : ''}
+      </article>`).join('')}</div></section>`; }).join('') : `<div class="panel">${emptyMsg('reports', f.who || f.project || f.team ? '조건에 맞는 보고가 없어요.' : '아직 작업 보고가 없어요. <b>+ 보고 쓰기</b>로 그날 만든 것을 스크린샷과 함께 남겨 주세요.')}</div>`}`;
+};
+
+/* ---------- 모달 폼 ---------- */
+const modal = $('#modal');
+let modalCleanup = null;
+function closeModal(){ modal.hidden = true; modal.innerHTML = ''; if (modalCleanup) { modalCleanup(); modalCleanup = null; } }
+function fieldHtml(f, v){
+  const id = 'f_' + f.key, w = f.wide ? 'wide' : '';
+  const lab = `<span>${esc(f.label)}${f.hint ? ` <em class="hint">${esc(f.hint)}</em>` : ''}</span>`;
+  if (f.type === 'textarea') return `<label class="fld wide">${lab}<textarea id="${id}" placeholder="${esc(f.ph || '')}">${esc(v)}</textarea></label>`;
+  if (f.type === 'select') return `<label class="fld ${w}">${lab}<select id="${id}">${f.options.map(([ov, ol]) => `<option value="${esc(ov)}" ${String(v ?? '') === String(ov) ? 'selected' : ''}>${esc(ol)}</option>`).join('')}</select></label>`;
+  if (f.type === 'color') return `<div class="fld wide">${lab}<div class="pal" role="radiogroup">${PALETTE.map((c, i) => `<label title="${c}"><input type="radio" name="${id}" value="${c}" ${(v || PALETTE[0]) === c ? 'checked' : ''} aria-label="색 ${i + 1}"><i style="--c:${c}"></i></label>`).join('')}</div></div>`;
+  if (f.type === 'images') return `<div class="fld wide">${lab}<div class="thumbs" id="${id}_th"></div>${assets ? `<label class="filebtn"><input type="file" id="${id}" accept="${IMG_TYPES.join(',')}" multiple>스크린샷 선택</label>` : `<span class="hint">이미지 업로드는 편집 권한이 있는 팀원만 할 수 있어요.</span>`}</div>`;
+  const list = f.list ? `list="${id}_dl"` : '';
+  const dl = f.list ? `<datalist id="${id}_dl">${f.list.map(n => `<option value="${esc(n)}">`).join('')}</datalist>` : '';
+  return `<label class="fld ${w}">${lab}<input id="${id}" type="${f.type || 'text'}" value="${esc(v)}" placeholder="${esc(f.ph || '')}" ${list} ${f.type === 'number' ? 'step="1"' : ''} autocomplete="off">${dl}</label>`;
+}
+function openForm({title, fields, values = {}, onSave, onDelete, saveLabel = '저장', after}){
+  modal.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle"><form id="mForm" novalidate>
+    <div class="sheet-h"><h2 id="mTitle">${esc(title)}</h2><button type="button" class="x" data-close aria-label="닫기">×</button></div>
+    <div class="fields">${fields.map(f => fieldHtml(f, values[f.key])).join('')}</div>
+    <p class="ferr" id="mErr" hidden></p>
+    <div class="sheet-f">${onDelete ? '<button type="button" class="danger" id="mDel">삭제</button>' : ''}<span class="sp"></span><button type="button" class="ghost" data-close>취소</button><button type="submit" class="primary" id="mSave">${esc(saveLabel)}</button></div>
+  </form></div>`;
+  modal.hidden = false;
+  const imgState = {};
+  const urls = [];
+  fields.filter(f => f.type === 'images').forEach(f => {
+    const st = imgState[f.key] = {keep: [...(values[f.key] || [])], files: []};
+    const th = $('#f_' + f.key + '_th');
+    const paint = () => {
+      th.innerHTML = st.keep.map((id, i) => `<figure><img src="/_blob/${esc(id)}" alt=""><button type="button" data-rm-keep="${i}" aria-label="이미지 빼기">×</button></figure>`).join('')
+        + st.files.map((fl, i) => { const u = URL.createObjectURL(fl); urls.push(u); return `<figure><img src="${u}" alt=""><button type="button" data-rm-file="${i}" aria-label="이미지 빼기">×</button></figure>`; }).join('');
+    };
+    paint();
+    th.addEventListener('click', e => {
+      const k = e.target.closest('[data-rm-keep]'), fl = e.target.closest('[data-rm-file]');
+      if (k) { st.keep.splice(+k.dataset.rmKeep, 1); paint(); }
+      if (fl) { st.files.splice(+fl.dataset.rmFile, 1); paint(); }
+    });
+    const inp = $('#f_' + f.key);
+    if (inp) inp.addEventListener('change', () => { st.files.push(...inp.files); inp.value = ''; paint(); });
+  });
+  modalCleanup = () => urls.forEach(u => URL.revokeObjectURL(u));
+  const form = $('#mForm'), err = $('#mErr'), btn = $('#mSave');
+  const showErr = m => { err.textContent = m; err.hidden = false; };
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const vals = {};
+    for (const f of fields) {
+      if (f.type === 'images') vals[f.key] = imgState[f.key];
+      else if (f.type === 'color') vals[f.key] = (form.querySelector(`input[name="f_${f.key}"]:checked`) || {}).value || PALETTE[0];
+      else vals[f.key] = $('#f_' + f.key).value.trim();
+      if (f.required && !vals[f.key]) { showErr(`${f.label}을(를) 입력해 주세요.`); $('#f_' + f.key)?.focus(); return; }
+    }
+    btn.disabled = true; btn.textContent = '저장 중…'; err.hidden = true;
+    try { await onSave(vals); closeModal(); }
+    catch (x) { showErr(x.message || '저장하지 못했어요.'); btn.disabled = false; btn.textContent = saveLabel; return; }
+    if (after) after();
+  });
+  const nameKey = ['by', 'member', 'name'].find(k => fields.some(f => f.key === k));
+  const teamSel = fields.some(f => f.key === 'team') ? $('#f_team') : null;
+  if (nameKey && teamSel) $('#f_' + nameKey).addEventListener('change', e => { const tm = rosterTeam(e.target.value.trim()); if (tm) teamSel.value = tm; });
+  const del = $('#mDel');
+  if (del) del.addEventListener('click', async () => {
+    if (!del.classList.contains('armed')) { del.classList.add('armed'); del.textContent = '한 번 더 누르면 삭제'; return; }
+    del.disabled = true;
+    try { await onDelete(); closeModal(); toast('삭제했어요.'); }
+    catch (x) { showErr(x.message || '삭제하지 못했어요.'); del.disabled = false; }
+  });
+  const first = modal.querySelector('input:not([type=radio]):not([type=file]),textarea,select');
+  if (first) first.focus();
+}
+modal.addEventListener('click', e => { if (e.target === modal || e.target.closest('[data-close]')) closeModal(); });
+
+const projOpts = (none = '프로젝트 없음') => [['', none], ...projsSorted().map(p => [p.id, p.name])];
+const authorFields = () => [
+  {key:'by', label:'입력한 사람', list: memberNames(), required:true, ph:'이름'},
+  {key:'team', label:'팀', type:'select', options: teamOpts()}
+];
+const authorVals = x => x && x.by
+  ? {by: x.by, team: TEAMS.includes(x.team) ? x.team : (rosterTeam(x.by) || TEAMS[0])}
+  : {by: me ? me.name : '', team: me ? me.team : TEAMS[0]};
+function needMe(fn){
+  if (!guard()) return;
+  if (me) return fn();
+  meForm(fn);
+}
+function meForm(then){
+  if (!guard()) return;
+  openForm({
+    title: '내 이름과 팀',
+    fields: [
+      {key:'name', label:'이름', list: S.team.map(m => m.name), required:true, ph:'예: 서하민'},
+      {key:'team', label:'팀', type:'select', options: teamOpts()}
+    ],
+    values: me || {team: TEAMS[0]},
+    saveLabel: '확인',
+    onSave: async v => {
+      me = {name: v.name, team: v.team};
+      store.set('me', JSON.stringify(me));
+      paintChrome();
+      toast(`${v.name} · ${v.team}(으)로 기록돼요.`);
+    },
+    after: then
+  });
+}
+
+function taskForm(t, preset = {}){
+  if (!t && !guard()) return;
+  const ro = !canWrite;
+  openForm({
+    title: t ? (ro ? '할 일' : '할 일 편집') : '새 할 일',
+    fields: [
+      {key:'title', label:'제목', wide:true, required:true, ph:'예: 몬스터 원화 3종'},
+      {key:'projectId', label:'프로젝트', type:'select', options: projOpts()},
+      {key:'status', label:'상태', type:'select', options: Object.entries(STATUS)},
+      {key:'assignee', label:'담당', list: memberNames(), ph:'이름'},
+      {key:'priority', label:'우선순위', type:'select', options: Object.entries(PRI)},
+      {key:'start', label:'언제부터 (시작일)', type:'date'},
+      {key:'due', label:'언제까지 (마감일)', type:'date'},
+      ...authorFields(),
+      {key:'note', label:'메모', type:'textarea'}
+    ],
+    values: {...(t || {status:'todo', priority:'mid', start: today(), ...preset}), ...authorVals(t)},
+    saveLabel: t ? '저장' : '추가',
+    onSave: async v => {
+      if (!guard()) throw new Error('수정 권한이 없어요.');
+      if (v.start && v.due && v.start > v.due) throw new Error('시작일이 마감일보다 늦어요.');
+      const data = {title:v.title, projectId:v.projectId, status:v.status, assignee:v.assignee, priority:v.priority, start:v.start, due:v.due, note:v.note, by:v.by, team:v.team};
+      if (!t) data.createdAt = Date.now();
+      await save('tasks', t && t.id, data);
+      toast(t ? '저장했어요.' : '할 일을 추가했어요.');
+    },
+    onDelete: t && canWrite ? () => remove('tasks', t.id) : null
+  });
+}
+function eventForm(ev, date){
+  if (!ev && !guard()) return;
+  openForm({
+    title: ev ? '일정 편집' : '새 일정',
+    fields: [
+      {key:'title', label:'제목', wide:true, required:true, ph:'예: 리스트업 회의'},
+      {key:'date', label:'언제부터', type:'date', required:true},
+      {key:'end', label:'언제까지', type:'date', hint:'하루짜리면 비워 두세요'},
+      {key:'time', label:'시간', type:'time'},
+      {key:'kind', label:'종류', type:'select', options: KINDS},
+      ...authorFields(),
+      {key:'note', label:'메모', type:'textarea'}
+    ],
+    values: {...(ev || {date: date || today(), kind:'meet'}), ...authorVals(ev)},
+    saveLabel: ev ? '저장' : '추가',
+    onSave: async v => {
+      if (!guard()) throw new Error('수정 권한이 없어요.');
+      if (v.end && v.end < v.date) throw new Error('끝나는 날이 시작하는 날보다 빨라요.');
+      const data = {title:v.title, date:v.date, end: v.end && v.end !== v.date ? v.end : '', time:v.time, kind:v.kind, note:v.note, by:v.by, team:v.team};
+      if (!ev) data.createdAt = Date.now();
+      await save('events', ev && ev.id, data);
+      toast(ev ? '저장했어요.' : '일정을 추가했어요.');
+    },
+    onDelete: ev && canWrite ? () => remove('events', ev.id) : null
+  });
+}
+function msForm(m){
+  if (!m && !guard()) return;
+  openForm({
+    title: m ? '마일스톤 편집' : '새 마일스톤',
+    fields: [
+      {key:'title', label:'제목', wide:true, required:true, ph:'예: 1차 프로토타입 완성'},
+      {key:'date', label:'날짜', type:'date', required:true},
+      {key:'projectId', label:'프로젝트', type:'select', options: projOpts()},
+      ...authorFields(),
+      {key:'note', label:'메모', type:'textarea'}
+    ],
+    values: {...(m || {date: today()}), ...authorVals(m)},
+    saveLabel: m ? '저장' : '추가',
+    onSave: async v => {
+      if (!guard()) throw new Error('수정 권한이 없어요.');
+      const data = {title:v.title, date:v.date, projectId:v.projectId, note:v.note, by:v.by, team:v.team};
+      if (!m) data.createdAt = Date.now();
+      await save('milestones', m && m.id, data);
+      toast(m ? '저장했어요.' : '마일스톤을 추가했어요.');
+    },
+    onDelete: m && canWrite ? () => remove('milestones', m.id) : null
+  });
+}
+function projForm(p){
+  if (!guard()) return;
+  openForm({
+    title: p ? '프로젝트 편집' : '새 프로젝트',
+    fields: [
+      {key:'name', label:'이름', wide:true, required:true, ph:'예: 아트 · 3D'},
+      {key:'color', label:'색', type:'color'},
+      {key:'order', label:'정렬 순서', type:'number', hint:'작을수록 앞'}
+    ],
+    values: p || {color: PALETTE[S.d.projects.length % PALETTE.length], order: S.d.projects.length + 1},
+    saveLabel: p ? '저장' : '추가',
+    onSave: async v => {
+      const data = {name:v.name, color:v.color, order: Number(v.order) || 0};
+      await save('projects', p && p.id, data);
+      toast(p ? '저장했어요.' : '프로젝트를 추가했어요.');
+    },
+    onDelete: p ? async () => {
+      if (S.d.tasks.some(t => t.projectId === p.id)) throw new Error('이 프로젝트에 할 일이 남아 있어요. 할 일을 다른 프로젝트로 옮기거나 지운 뒤 삭제해 주세요.');
+      await remove('projects', p.id);
+    } : null
+  });
+}
+function bibleForm(s){
+  if (!guard()) return;
+  openForm({
+    title: s ? '설정 항목 편집' : '새 설정 항목',
+    fields: [
+      {key:'title', label:'제목', wide:true, required:true, ph:'예: 흑백 공간과 미완성 표현'},
+      {key:'body', label:'내용', type:'textarea'},
+      {key:'colors', label:'색상 견본', wide:true, hint:'#hex를 쉼표로 구분', ph:'#14161b, #f4f6f9'},
+      {key:'order', label:'정렬 순서', type:'number', hint:'작을수록 앞'},
+      ...authorFields()
+    ],
+    values: {...(s ? {...s, colors: (s.colors || []).join(', ')} : {order: S.d.bible.length + 1}), ...authorVals(s)},
+    saveLabel: s ? '저장' : '추가',
+    onSave: async v => {
+      const colors = v.colors ? v.colors.split(/[\s,]+/).filter(Boolean) : [];
+      const bad = colors.find(c => !/^#[0-9a-f]{3,8}$/i.test(c));
+      if (bad) throw new Error(`색상 "${bad}"를 읽을 수 없어요. #1a2b3c 형식으로 적어 주세요.`);
+      const data = {title:v.title, body:v.body, colors, order: Number(v.order) || 0, by:v.by, team:v.team};
+      await save('bible', s && s.id, data);
+      toast(s ? '저장했어요.' : '설정 항목을 추가했어요.');
+    },
+    onDelete: s ? () => remove('bible', s.id) : null
+  });
+}
+function reportForm(r){
+  if (!guard()) return;
+  openForm({
+    title: r ? '보고 편집' : '작업 보고 쓰기',
+    fields: [
+      {key:'date', label:'날짜', type:'date', required:true},
+      {key:'projectId', label:'프로젝트', type:'select', options: projOpts()},
+      {key:'member', label:'작성자', list: memberNames(), required:true, ph:'이름'},
+      {key:'team', label:'팀', type:'select', options: REP_TEAMS.map(t => [t, t])},
+      {key:'title', label:'무엇을 만들었나요', wide:true, required:true, ph:'예: 광장 배경 컨셉 v02 완성'},
+      {key:'body', label:'내용', type:'textarea', ph:'작업한 내용, 바뀐 점, 다음에 할 일'},
+      {key:'images', label:'스크린샷', type:'images', hint:'PNG·JPG·GIF·WEBP, 장당 20MB 이하'}
+    ],
+    values: r ? {...r, team: REP_TEAMS.includes(r.team) ? r.team : (rosterTeam(r.member) || TEAMS[0])} : {date: today(), member: me ? me.name : '', team: me ? me.team : TEAMS[0]},
+    saveLabel: r ? '저장' : '올리기',
+    onSave: async v => {
+      const newIds = await uploadFiles(v.images.files);
+      const images = [...v.images.keep, ...newIds];
+      const data = {date:v.date, member:v.member, team:v.team, title:v.title, projectId:v.projectId, body:v.body, images};
+      if (!r) { data.createdAt = Date.now(); data.authorId = myId; }
+      try { await save('reports', r && r.id, data); }
+      catch (x) { await dropAssets(newIds); throw x; }
+      if (r) await dropAssets((r.images || []).filter(id => !images.includes(id)));
+      store.set('member', v.member);
+      toast(r ? '저장했어요.' : '작업 보고를 올렸어요.');
+    },
+    onDelete: r ? async () => { await remove('reports', r.id); await dropAssets(r.images || []); } : null
+  });
+}
+function artForm(files, x){
+  if (!guard()) return;
+  const multi = files && files.length > 1;
+  openForm({
+    title: x ? '이미지 정보 편집' : (multi ? `이미지 ${files.length}장 올리기` : '이미지 올리기'),
+    fields: [
+      ...(multi ? [] : [{key:'title', label:'제목', wide:true, required:true}]),
+      {key:'category', label:'분류', type:'select', options: ART_CATS.map(c => [c, c])},
+      {key:'version', label:'버전', ph:'v01'},
+      {key:'member', label:'올린 사람', list: memberNames(), required:true},
+      {key:'team', label:'팀', type:'select', options: teamOpts()},
+      {key:'note', label:'설명', type:'textarea', ph:'무엇을 참고했는지, 피드백 받을 점'}
+    ],
+    values: x ? {...x, team: TEAMS.includes(x.team) ? x.team : (rosterTeam(x.member) || (me ? me.team : TEAMS[0])), member: x.member || (me ? me.name : '')} : {title: files && files[0] ? files[0].name.replace(/\.[^.]+$/, '') : '', category:'배경', member: me ? me.name : '', team: me ? me.team : TEAMS[0]},
+    saveLabel: x ? '저장' : '올리기',
+    onSave: async v => {
+      if (x) {
+        await save('art', x.id, {title:v.title, category:v.category, version:v.version, member:v.member, team:v.team, note:v.note});
+        toast('저장했어요.'); return;
+      }
+      let n = 0;
+      for (const f of files) {
+        const [id] = await uploadFiles([f]);
+        try {
+          await save('art', null, {title: multi ? f.name.replace(/\.[^.]+$/, '') : v.title, category:v.category, version:v.version, member:v.member, team:v.team, note:v.note, assetId:id, createdAt: Date.now()});
+        } catch (e) { await dropAssets([id]); throw e; }
+        n++;
+      }
+      if (v.member) store.set('member', v.member);
+      toast(`이미지 ${n}장을 올렸어요.`);
+    },
+    onDelete: x ? async () => { await remove('art', x.id); await dropAssets([x.assetId]); } : null
+  });
+}
+function teamForm(){
+  const ro = !canWrite;
+  openForm({
+    title: '팀원 명단',
+    fields: [{key:'members', label:'한 줄에 한 명, "이름 / 팀 / 역할"', hint:'팀은 아트팀 · 프밍팀 · 기획팀', type:'textarea', ph:'서하민 / 아트팀 / 3D 배경 · 아트 팀장'}],
+    values: {members: S.team.map(m => [m.name, m.team, m.role].filter(Boolean).join(' / ')).join('\n')},
+    saveLabel: ro ? '닫기' : '저장',
+    onSave: async v => {
+      if (ro) return;
+      if (!guard()) throw new Error('수정 권한이 없어요.');
+      const members = v.members.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+        const parts = l.split('/').map(s => s.trim());
+        const name = parts.shift();
+        const team = TEAMS.includes(parts[0]) ? parts.shift() : '';
+        return {name, team, role: parts.join(' / ')};
+      }).filter(m => m.name);
+      try { await db.doc('settings/team').set({members}); } catch (e) { throw new Error(dbErr(e)); }
+      toast('팀원 명단을 저장했어요.');
+    }
+  });
+}
+function goalForm(g){
+  if (!guard()) return;
+  openForm({
+    title: '이달 목표 편집',
+    fields: [
+      {key:'title', label:'목표', wide:true, required:true},
+      {key:'month', label:'월', type:'month', required:true},
+      ...authorFields()
+    ],
+    values: {...g, ...authorVals(g)},
+    onSave: async v => {
+      if (!/^\d{4}-\d{2}$/.test(v.month)) throw new Error('월을 2026-10 형식으로 골라 주세요.');
+      await save('goals', g.id, {title:v.title, month:v.month, by:v.by, team:v.team});
+      toast('저장했어요.');
+    },
+    onDelete: () => remove('goals', g.id)
+  });
+}
+async function toggleGoal(g){
+  const done = !g.done;
+  try {
+    await save('goals', g.id, done ? {done:true, doneBy: me.name, doneTeam: me.team, doneAt: today()} : {done:false, doneBy:'', doneTeam:'', doneAt:''});
+    toast(done ? `"${g.title}" 완료!` : '완료를 취소했어요.');
+  } catch (x) { toast(x.message); }
+}
+
+/* ---------- 라이트박스 ---------- */
+const lb = $('#lightbox');
+function openLightbox(src, cap, art){
+  lb.innerHTML = `<div class="lb-in" role="dialog" aria-modal="true" aria-label="이미지 보기">
+    <img src="${esc(src)}" alt="${esc(cap)}">
+    <div class="lb-cap"><span class="t">${esc(cap)}</span>${art ? `<span class="muted">${esc(art.category || '')}${art.version ? ' · ' + esc(art.version) : ''}${art.member ? ' · ' + esc(art.member) : ''}</span>` : ''}<span style="flex:1"></span>${art && canWrite ? `<button type="button" class="ghost" data-lb-edit="${esc(art.id)}">정보 편집</button>` : ''}<button type="button" class="ghost" data-lb-close>닫기</button>${art && art.note ? `<span class="n">${esc(art.note)}</span>` : ''}</div>
+  </div>`;
+  lb.hidden = false;
+  $('[data-lb-close]', lb).focus();
+}
+lb.addEventListener('click', e => {
+  const ed = e.target.closest('[data-lb-edit]');
+  if (ed) { lb.hidden = true; artForm(null, S.d.art.find(a => a.id === ed.dataset.lbEdit)); return; }
+  if (e.target === lb || e.target.closest('[data-lb-close]') || e.target.closest('.lb-in') === null) lb.hidden = true;
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!lb.hidden) lb.hidden = true; else if (!modal.hidden) closeModal();
+});
+
+/* ---------- 토스트 ---------- */
+let toastT;
+function toast(m){ const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }
+
+/* ---------- 이벤트 ---------- */
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) setView(b.dataset.view); });
+$('#teamBtn').addEventListener('click', teamForm);
+const byId = (c, id) => S.d[c].find(x => x.id === id);
+const shiftCal = n => {
+  const a = parse(S.cal.anchor);
+  S.cal.anchor = iso(S.cal.mode === 'month' ? new Date(a.getFullYear(), a.getMonth() + n, 1) : addDays(a, 7 * n));
+  render();
+};
+main.addEventListener('click', e => {
+  const v = e.target.closest('[data-view]');
+  if (v && main.contains(v)) { setView(v.dataset.view); return; }
+  if (selOn() && !S.sel.busy) {
+    const s = e.target.closest('[data-sel]');
+    if (s && main.contains(s)) {
+      e.preventDefault();
+      const k = s.dataset.sel;
+      if (S.sel.keys.has(k)) S.sel.keys.delete(k); else S.sel.keys.add(k);
+      S.sel.armed = false;
+      return render();
+    }
+  }
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const {act, id} = el.dataset;
+  switch (act) {
+    case 'sel-on': if (guard()) { S.sel = {view: S.view, keys: new Set(), armed: false, busy: false, visible: []}; render(); } return;
+    case 'sel-off': S.sel = null; return render();
+    case 'sel-all': S.sel.visible.forEach(k => S.sel.keys.add(k)); S.sel.armed = false; return render();
+    case 'sel-none': S.sel.keys.clear(); S.sel.armed = false; return render();
+    case 'sel-del': if (!S.sel.armed) { S.sel.armed = true; return render(); } return delSelected();
+    case 'edit-task': return taskForm(byId('tasks', id));
+    case 'new-task': { const pre = S.view === 'kanban' && S.kb.project && S.kb.project !== '_none' ? {projectId: S.kb.project} : {}; return needMe(() => taskForm(null, pre)); }
+    case 'edit-event': return eventForm(byId('events', id));
+    case 'new-event': { const d = el.dataset.date; return needMe(() => eventForm(null, d)); }
+    case 'edit-ms': return canWrite ? msForm(byId('milestones', id)) : toast(`◆ ${byId('milestones', id)?.title || ''}`);
+    case 'new-ms': return needMe(() => msForm(null));
+    case 'edit-goal': { const g = byId('goals', id); return g && (canWrite ? goalForm(g) : toast(`${g.title}${byText(g) ? ' · 입력 ' + byText(g) : ''}`)); }
+    case 'goal-done': { const g = byId('goals', id); return g && needMe(() => toggleGoal(g)); }
+    case 'edit-proj': return projForm(byId('projects', id));
+    case 'new-proj': return projForm(null);
+    case 'edit-bible': return bibleForm(byId('bible', id));
+    case 'new-bible': return needMe(() => bibleForm(null));
+    case 'edit-report': return reportForm(byId('reports', id));
+    case 'new-report': return needMe(() => reportForm(null));
+    case 'open-report': setView('reports'); requestAnimationFrame(() => document.getElementById('rep-' + id)?.scrollIntoView({block:'center'})); return;
+    case 'upload-art': if (guard()) { if (me) $('#artFile').click(); else meForm(() => toast('이제 이미지 올리기를 다시 눌러 주세요.')); } return;
+    case 'team-roster': return teamForm();
+    case 'view-art': { const a = byId('art', id); if (a) openLightbox('/_blob/' + a.assetId, a.title, a); return; }
+    case 'view-img': return openLightbox(el.dataset.src, el.dataset.cap);
+    case 'art-cat': S.art.cat = el.dataset.cat; return render();
+    case 'cal-mode': S.cal.mode = el.dataset.mode; store.set('calMode', S.cal.mode); return render();
+    case 'cal-prev': return shiftCal(-1);
+    case 'cal-next': return shiftCal(1);
+    case 'cal-today': S.cal.anchor = today(); return render();
+    case 'cal-week': S.cal.mode = 'week'; S.cal.anchor = el.dataset.date; return render();
+    case 'tl-prev': S.tl.anchor = iso(addDays(parse(S.tl.anchor), -14)); return render();
+    case 'tl-next': S.tl.anchor = iso(addDays(parse(S.tl.anchor), 14)); return render();
+    case 'kb-set': S.kb[el.dataset.key] = el.dataset.val; return render();
+    case 'rep-set': S.rep[el.dataset.key] = el.dataset.val; return render();
+    case 'tl-today': S.tl.anchor = today(); return render();
+    case 'tl-team': S.tl.team = el.dataset.team; return render();
+    case 'tl-done': S.tl.hideDone = !S.tl.hideDone; return render();
+  }
+});
+main.addEventListener('change', async e => {
+  const f = e.target.closest('[data-filter]');
+  if (f) { const [a, b] = f.dataset.filter.split('.'); S[a][b] = f.value; render(); return; }
+  const tg = e.target.closest('[data-toggle]');
+  if (tg) {
+    if (!guard()) { tg.checked = !tg.checked; return; }
+    try { await save('tasks', tg.dataset.toggle, {status: tg.checked ? 'done' : 'todo'}); }
+    catch (x) { tg.checked = !tg.checked; toast(x.message); }
+  }
+});
+main.addEventListener('submit', e => {
+  const f = e.target.closest('[data-qa],[data-goal-add]');
+  if (!f) return;
+  e.preventDefault();
+  const inp = f.querySelector('input'), title = inp.value.trim();
+  if (!title) return;
+  needMe(async () => {
+    inp.value = '';
+    const who = {by: me.name, team: me.team, createdAt: Date.now()};
+    try {
+      if (f.dataset.goalAdd) await save('goals', null, {title, month: f.dataset.goalAdd, done: false, ...who});
+      else await save('tasks', null, {title, projectId: f.dataset.qa === '_none' ? '' : f.dataset.qa, status:'todo', priority:'mid', start: today(), ...who});
+    } catch (x) { inp.value = title; toast(x.message); }
+  });
+});
+$('#artFile').addEventListener('change', e => {
+  const files = [...e.target.files]; e.target.value = '';
+  if (files.length) artForm(files, null);
+});
+/* 칸반 끌어 놓기 */
+let dragId = null;
+main.addEventListener('dragstart', e => {
+  const c = e.target.closest('.card[draggable="true"]'); if (!c) return;
+  dragId = c.dataset.id; c.classList.add('dragging');
+  try { e.dataTransfer.setData('text/plain', dragId); e.dataTransfer.effectAllowed = 'move'; } catch {}
+});
+main.addEventListener('dragend', e => { e.target.closest('.card')?.classList.remove('dragging'); main.querySelectorAll('.kcol.over').forEach(x => x.classList.remove('over')); });
+main.addEventListener('dragover', e => {
+  const col = e.target.closest('[data-drop]'); if (!col || !dragId) return;
+  e.preventDefault();
+  main.querySelectorAll('.kcol.over').forEach(x => x !== col && x.classList.remove('over'));
+  col.classList.add('over');
+});
+main.addEventListener('drop', async e => {
+  const col = e.target.closest('[data-drop]'); if (!col || !dragId) return;
+  e.preventDefault(); col.classList.remove('over');
+  const id = dragId, st = col.dataset.drop; dragId = null;
+  const t = byId('tasks', id);
+  if (!t || t.status === st || !guard()) return;
+  try { await save('tasks', id, {status: st}); toast(`"${t.title}"을(를) ${STATUS[st]}(으)로 옮겼어요.`); }
+  catch (x) { toast(x.message); }
+});
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h !== S.view && VIEWS.some(v => v[0] === h)) setView(h); });
+$('#meBtn').addEventListener('click', () => meForm());
+let rz; window.addEventListener('resize', () => { if (S.view !== 'timeline') return; clearTimeout(rz); rz = setTimeout(render, 200); });
+
+/* ---------- 연결 ---------- */
+async function waitClaude(){
+  for (let i = 0; i < 30 && !(window.claude && window.claude.use); i++) await new Promise(r => setTimeout(r, 100));
+  return window.claude && window.claude.use ? window.claude : null;
+}
+async function boot(){
+  paintChrome(); render();
+  const c = await waitClaude();
+  if (!c) { S.dbState = 'none'; paintChrome(); render(); return; }
+  const [d, u, a] = await Promise.all([c.use('db'), c.use('user'), c.use('assets')].map(p => p.catch(() => null)));
+  db = d; assets = a;
+  if (!db) { S.dbState = 'none'; paintChrome(); render(); return; }
+  const cw = u ? await u.can('data.write') : null;
+  canWrite = cw !== false;
+  myId = u ? await u.id() : null;
+  S.dbState = 'ok';
+  paintChrome(); render();
+  const onErr = e => { if (e && e.code === 'revoked') { canWrite = false; } S.dbState = 'error'; paintChrome(); render(); };
+  COLS.forEach(col => db.collection(col).onSnapshot(snap => {
+    S.d[col] = snap.docs.map(x => ({id: x.id, ...x.data()}));
+    S.loaded.add(col);
+    if (modal.hidden) render(); else pending = true;
+  }, onErr));
+  db.doc('settings/team').onSnapshot(snap => {
+    S.team = snap.exists && Array.isArray(snap.data().members) ? snap.data().members : [];
+    if (S.view === 'overview') { if (modal.hidden) render(); else pending = true; }
+  }, () => {});
+}
+let pending = false;
+new MutationObserver(() => { if (modal.hidden && pending) { pending = false; render(); } }).observe(modal, {attributes: true, attributeFilter: ['hidden']});
+boot();
+})();
+</script>
