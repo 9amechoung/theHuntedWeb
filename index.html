@@ -331,6 +331,9 @@ button.trow:hover{background:var(--slate-soft)}
 .selmode .trow[data-sel]::before{content:"";flex:none;width:18px;height:18px;border:2px solid var(--ink);background:var(--panel);display:grid;place-items:center;font-size:12px;font-weight:700;line-height:1}
 .selmode [data-sel].picked{outline:3px solid var(--red);outline-offset:-3px;background:var(--red-soft)}
 .selmode [data-sel].picked::after,.selmode .trow[data-sel].picked::before{content:"✓";background:var(--red);border-color:var(--red);color:var(--panel)}
+.dlmode [data-sel].picked{outline-color:var(--blue);background:var(--blue-soft)}
+.dlmode [data-sel].picked::after{background:var(--blue);border-color:var(--blue)}
+.dlmode .sec .linkbtn{visibility:visible}
 .selmode .shot[data-sel].picked img{opacity:.6}
 .selbar{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:15;display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;background:var(--panel);border:var(--frame);box-shadow:4px 4px 0 var(--ink);padding:10px 14px}
 .selbar .sp{flex:1}
@@ -806,6 +809,7 @@ function render(){
   html += (V[S.view] || V.overview)();
   main.innerHTML = html;
   main.classList.toggle('selmode', selOn());
+  main.classList.toggle('dlmode', selDl());
   if (keep) {
     const n = document.getElementById(keep.id);
     if (n) { n.value = keep.v; n.focus(); try { n.setSelectionRange(keep.s, keep.s); } catch {} }
@@ -816,11 +820,13 @@ const emptyMsg = (c, msg) => loading(c) ? `<p class="empty">불러오는 중…<
 
 /* 여러 개 골라서 삭제 */
 const selOn = () => !!(S.sel && S.sel.view === S.view);
-const selAttr = k => selOn() ? ` data-sel="${esc(k)}"` : '';
+const selDl = () => selOn() && S.sel.mode === 'dl';   // 선택 다운로드: 아트 이미지만 고를 수 있음
+const selAttr = k => selOn() && !(selDl() && !k.startsWith('art:')) ? ` data-sel="${esc(k)}"` : '';
 const picked = k => selOn() && S.sel.keys.has(k) ? ' picked' : '';
 const selToggle = () => canWrite && S.dbState === 'ok' && !selOn() ? `<button type="button" class="ghost" data-act="sel-on">선택 삭제</button>` : '';
 function selBar(keys){
   if (!selOn()) return '';
+  if (selDl()) return dlBar(keys.filter(k => k.startsWith('art:')));
   S.sel.visible = keys;
   const n = S.sel.keys.size, allOn = keys.length && keys.every(k => S.sel.keys.has(k));
   const del = S.sel.busy ? '삭제하는 중…' : S.sel.armed ? `${n}개를 정말 삭제할까요? 한 번 더 누르세요` : `선택한 ${n}개 삭제`;
@@ -830,6 +836,17 @@ function selBar(keys){
     <span class="sp"></span>
     <button type="button" class="danger ${S.sel.armed ? 'armed' : ''}" data-act="sel-del" ${n && !S.sel.busy ? '' : 'disabled'}>${del}</button>
     <button type="button" class="ghost" data-act="sel-off" ${S.sel.busy ? 'disabled' : ''}>끝내기</button>
+  </div>`;
+}
+function dlBar(keys){
+  S.sel.visible = keys;
+  const n = S.sel.keys.size, allOn = keys.length && keys.every(k => S.sel.keys.has(k));
+  return `<div class="selbar dl" role="region" aria-label="선택 다운로드">
+    <b>${n ? `${n}장 선택됨` : '받을 이미지를 눌러서 고르세요'}</b>
+    <button type="button" class="ghost" data-act="${allOn ? 'sel-none' : 'sel-all'}">${allOn ? '선택 해제' : `보이는 것 모두 선택 (${keys.length})`}</button>
+    <span class="sp"></span>
+    <button type="button" class="primary" data-act="sel-dl" ${n && !zipBusy ? '' : 'disabled'}>${zipBusy ? '받는 중…' : n > 1 ? `⭳ ${n}장 zip으로 받기` : `⭳ 받기`}</button>
+    <button type="button" class="ghost" data-act="sel-off" ${zipBusy ? 'disabled' : ''}>끝내기</button>
   </div>`;
 }
 async function delSelected(){
@@ -1243,7 +1260,7 @@ V.art = () => {
       ${s.by ? `<span class="byline">입력 ${esc(byText(s))}</span>` : ''}
       ${(s.colors || []).length ? `<div class="sw">${s.colors.filter(c => /^#[0-9a-f]{3,8}$/i.test(c)).map(c => `<figure><i style="--sw:${c}"></i><figcaption>${esc(c)}</figcaption></figure>`).join('')}</div>` : ''}
     </article>`).join('') : `<div class="panel">${emptyMsg('bible', '설정 항목이 없어요. 그래픽 컨셉, 색 규칙, 캐릭터 설정 같은 기준을 <b>+ 설정 항목</b>으로 적어 두세요.')}</div>`}</section>
-  <div class="bar"><h2 class="vtitle" style="font-size:22px">컨셉 이미지</h2><span class="muted num">${S.d.art.length}장</span><span class="sp"></span>${imgs.length && assets && !selOn() ? `<button type="button" class="ghost" data-act="art-zip" ${zipBusy ? 'disabled' : ''}>${zipBusy ? '묶는 중…' : `⭳ ${cat ? esc(cat) + ' ' : '전체 '}${imgs.length}장 한 번에 받기`}</button>` : ''}</div>
+  <div class="bar"><h2 class="vtitle" style="font-size:22px">컨셉 이미지</h2><span class="muted num">${S.d.art.length}장</span><span class="sp"></span>${imgs.length && assets && !selOn() ? `<button type="button" class="ghost" data-act="sel-on" data-mode="dl">⭳ 선택 다운로드</button>` : ''}</div>
   <div class="chips" role="group" aria-label="분류"><button type="button" class="chip" data-act="art-cat" data-cat="" aria-pressed="${!cat}">전체<span class="n">${S.d.art.length}</span></button>${ART_CATS.map(c => `<button type="button" class="chip" data-act="art-cat" data-cat="${c}" aria-pressed="${cat === c}">${c}<span class="n">${counts[c]}</span></button>`).join('')}</div>
   ${imgs.length ? `<div class="gal">${imgs.map(x => `<button type="button" class="shot${picked('art:' + x.id)}" data-act="view-art" data-id="${esc(x.id)}"${selAttr('art:' + x.id)}>
       <span class="im"><img ${blobAttr(x.assetId)} alt="${esc(x.title)}"></span>
@@ -1869,7 +1886,17 @@ main.addEventListener('click', e => {
   if (!el) return;
   const {act, id} = el.dataset;
   switch (act) {
-    case 'sel-on': if (guard()) { S.sel = {view: S.view, keys: new Set(), armed: false, busy: false, visible: []}; render(); } return;
+    case 'sel-on': {
+      const mode = el.dataset.mode === 'dl' ? 'dl' : 'del';
+      if (mode === 'del' && !guard()) return;
+      S.sel = {view: S.view, mode, keys: new Set(), armed: false, busy: false, visible: []};
+      return render();
+    }
+    case 'sel-dl': {
+      const list = [...S.sel.keys].map(k => byId('art', k.slice(4))).filter(x => x && x.assetId);
+      if (list.length === 1) { downloadOne(list[0].assetId, artFileBase(list[0])); S.sel = null; return render(); }
+      return downloadZip(list, `선택${list.length}장`).then(() => { S.sel = null; render(); });
+    }
     case 'sel-off': S.sel = null; return render();
     case 'sel-all': S.sel.visible.forEach(k => S.sel.keys.add(k)); S.sel.armed = false; return render();
     case 'sel-none': S.sel.keys.clear(); S.sel.armed = false; return render();
@@ -1894,11 +1921,6 @@ main.addEventListener('click', e => {
     case 'team-roster': return teamForm();
     case 'team-add': return addTeamForm();
     case 'kinds-edit': return kindsForm();
-    case 'art-zip': {
-      const c = S.art.cat;
-      const list = S.d.art.filter(x => x.assetId && (!c || x.category === c)).sort((a, b) => (b.createdAt||0) - (a.createdAt||0));
-      return downloadZip(list, c || '전체');
-    }
     case 'relogin': return $('#outBtn').click();
     case 'view-art': { const a = byId('art', id); if (a) openLightbox(a.assetId, a.title, a); return; }
     case 'view-img': return openLightbox(el.dataset.src, el.dataset.cap);
