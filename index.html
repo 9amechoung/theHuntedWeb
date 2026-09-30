@@ -124,9 +124,9 @@ button.trow:hover{background:var(--slate-soft)}
 .prog:first-child{border-top:0}
 .meter{grid-column:1/-1;height:10px;border:1.5px solid var(--ink);background:var(--panel);position:relative;overflow:hidden}
 .meter i{position:absolute;inset:0 auto 0 0;background:var(--c)}
-.crew{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(0,1fr)}
-.crew-t{padding:12px 14px;border-left:1.5px solid var(--ink);min-width:0}
-.crew-t:first-child{border-left:0}
+.crew{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));overflow:hidden}
+.crew-t{padding:12px 14px;min-width:0;box-shadow:1.5px 0 0 var(--ink),0 1.5px 0 var(--ink)}
+.crew-t.wide{grid-column:span 2}
 .crew-h{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
 .crew-h b{font-family:var(--f-mono);font-size:22px;line-height:1;color:var(--c)}
 .crew-h .tchip{align-self:center}
@@ -377,6 +377,31 @@ button.trow:hover{background:var(--slate-soft)}
 .ferr{margin:0 16px;padding:8px 10px;border:1.5px solid var(--red);background:var(--red-soft);color:var(--red)}
 .sheet-f{display:flex;gap:8px;align-items:center;padding:12px 16px;border-top:1.5px solid var(--ink);position:sticky;bottom:0;background:var(--panel)}
 .sheet-f .sp{flex:1}
+.sheet.roster{width:min(860px,100%)}
+.rsec{padding:14px 16px 0;display:flex;flex-direction:column;gap:8px}
+.rsec .hint{font-weight:400;letter-spacing:0;color:var(--ink-3);margin-left:6px}
+.rteam{display:inline-flex}
+.rteam .chip{border-right:0}
+.rx{border:1.5px solid var(--ink);background:var(--panel);padding:0 8px;font-size:14px;line-height:1;color:var(--ink-2)}
+.rx:hover{background:var(--red-soft);color:var(--red);border-color:var(--red)}
+.rx.armed{background:var(--red);color:var(--panel);border-color:var(--red);font-size:12px}
+.radd{display:flex;gap:8px}
+.radd input{flex:1;min-width:0;border:1.5px solid var(--ink);background:var(--panel);padding:6px 9px}
+.rwrap{overflow-x:auto;border:1.5px solid var(--ink);max-height:52vh;overflow-y:auto}
+.rtable{width:100%;border-collapse:collapse;min-width:520px}
+.rtable th{position:sticky;top:0;background:var(--slate-soft);text-align:left;font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--ink-2);padding:7px 8px;border-bottom:1.5px solid var(--ink);z-index:1}
+.rtable td{padding:4px 6px;border-top:1px solid var(--rule);vertical-align:middle}
+.rtable tbody tr:first-child td{border-top:0}
+.rtable tbody tr:hover{background:color-mix(in srgb,var(--slate-soft) 50%,transparent)}
+.rtable th:nth-child(1){width:22%} .rtable th:nth-child(2){width:22%} .rtable th:nth-child(4){width:44px}
+.rtable input,.rtable select{width:100%;min-width:0;border:1px solid transparent;background:transparent;padding:5px 6px}
+.rtable input:hover,.rtable select:hover{border-color:var(--rule)}
+.rtable input:focus,.rtable select:focus{border-color:var(--ink);background:var(--panel)}
+.rtable select{color:var(--c);font-weight:700}
+.rtable select option{color:var(--ink);font-weight:400}
+.rtable td .rx{width:30px;height:30px;padding:0}
+.radd-row{align-self:flex-start;border-style:dashed}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .done-btn{border-color:var(--green);color:var(--green)}
 .done-btn:hover{background:var(--green-soft)}
 .lb{background:color-mix(in srgb,#000 82%,transparent)}
@@ -390,8 +415,7 @@ button.trow:hover{background:var(--slate-soft)}
 @media (max-width:860px){
   .ov{grid-template-columns:minmax(0,1fr)}
   .crew{grid-template-columns:minmax(0,1fr)}
-  .crew-t{border-left:0;border-top:1.5px solid var(--ink)}
-  .crew-t:first-child{border-top:0}
+  .crew-t.wide{grid-column:auto}
   .calwrap{grid-template-columns:minmax(0,1fr)}
   .calside{position:static}
   .kb{grid-template-columns:minmax(0,1fr)}
@@ -510,11 +534,25 @@ const PALETTE = ['#2f87d0','#cf3b27','#23804f','#c68a14','#7c5cd6','#0f9aa6','#d
 const IMG_TYPES = ['image/png','image/jpeg','image/gif','image/webp'];
 const VIEWS = [['overview','개요'],['calendar','캘린더'],['timeline','타임라인'],['kanban','칸반'],['todo','할 일'],['art','아트 바이블'],['reports','작업 보고']];
 const COLS = ['projects','tasks','milestones','events','reports','art','bible','goals'];
-const TEAMS = ['아트팀','프밍팀','기획팀'];
-const TEAM_C = {'아트팀':'var(--green)','프밍팀':'var(--blue)','기획팀':'var(--violet)'};
+/* 팀 목록은 settings/team 문서의 teams에 저장 (팀원 명단 창에서 편집). 없으면 기본 3팀 */
+const TEAM_DEFAULT = [{name:'아트팀', color:'var(--green)'}, {name:'프밍팀', color:'var(--blue)'}, {name:'기획팀', color:'var(--violet)'}];
+const TEAM_PAL = ['var(--green)','var(--blue)','var(--violet)','var(--amber)','var(--red)','#0f9aa6','#d0457f','#6b7385','#c68a14','#2f87d0'];
+const TEAM_NAME_OK = s => /^[^<>"'&/,\n]{1,20}$/.test(s) && s !== '공통';
+const TEAM_COLOR_OK = c => /^#[0-9a-f]{3,8}$/i.test(c || '') || /^var\(--[a-z-]+\)$/.test(c || '');
+const TEAMS = [];
+const TEAM_C = {};
 const teamOpts = () => TEAMS.map(t => [t, t]);
-const REP_TEAMS = [...TEAMS, '공통'];
-TEAM_C['공통'] = 'var(--slate)';
+const REP_TEAMS = [];
+function applyTeams(list){
+  const ok = Array.isArray(list) ? list.filter(t => t && typeof t.name === 'string' && TEAM_NAME_OK(t.name)) : [];
+  const use = ok.length ? ok : TEAM_DEFAULT;
+  TEAMS.splice(0, TEAMS.length, ...use.map(t => t.name));
+  Object.keys(TEAM_C).forEach(k => delete TEAM_C[k]);
+  use.forEach((t, i) => { TEAM_C[t.name] = TEAM_COLOR_OK(t.color) ? t.color : TEAM_PAL[i % TEAM_PAL.length]; });
+  TEAM_C['공통'] = 'var(--slate)';
+  REP_TEAMS.splice(0, REP_TEAMS.length, ...TEAMS, '공통');
+}
+applyTeams(null);
 const tchip = t => REP_TEAMS.includes(t) ? `<span class="tchip" style="--c:${TEAM_C[t]}">${t}</span>` : '';
 const byText = x => x && x.by ? `${x.by}${x.team ? ' · ' + x.team : ''}` : '';
 const range = (a, b) => { const f = s => { const d = parse(s); return `${d.getMonth()+1}월 ${d.getDate()}`; }; return a === b || !b ? f(a) : `${f(a)} - ${f(b)}`; };
@@ -536,7 +574,7 @@ let db = null, assets = null, canWrite = false, myId = null;
 
 let me = null;
 try { me = JSON.parse(store.get('me') || 'null'); } catch {}
-if (!me || !me.name || !TEAMS.includes(me.team)) me = null;
+if (!me || !me.name || !me.team) me = null;
 if (store.get('view') === 'gantt') store.set('view', 'timeline');
 const hashView = (location.hash || '').slice(1).replace(/^gantt$/, 'timeline');
 S.view = VIEWS.some(v => v[0] === hashView) ? hashView : (VIEWS.some(v => v[0] === store.get('view')) ? store.get('view') : 'overview');
@@ -711,26 +749,31 @@ const artPart = role => ART_PARTS.find(([, , f]) => f(role || '')) || ['기타',
 const isLead = m => /팀장/.test(m.role || '');
 const nameList = ms => ms.map(m => `<span class="${isLead(m) ? 'lead' : ''}"${isLead(m) ? ' title="팀장"' : ''}>${esc(m.name)}</span>`).join(', ');
 function crewPanel(){
-  const head = `<div class="ph"><h2>팀 구성</h2><span class="cnt">총 ${S.team.length}명</span><span class="sp"></span><button type="button" class="linkbtn" data-act="team-roster">팀원 명단</button></div>`;
+  const head = `<div class="ph"><h2>팀 구성</h2><span class="cnt">총 ${S.team.length}명</span><span class="sp"></span>${canWrite ? '<button type="button" class="linkbtn" data-act="team-add">+ 팀 추가</button>' : ''}<button type="button" class="linkbtn" data-act="team-roster">팀원 명단</button></div>`;
   if (!S.team.length) return `<section class="panel full">${head}<p class="empty">팀원 명단이 비어 있어요. <b>팀원 명단</b>에서 이름을 넣어 주세요.</p></section>`;
-  const col = (t, body, n) => `<div class="crew-t" style="--c:${TEAM_C[t]}"><div class="crew-h"><span class="tchip" style="--c:${TEAM_C[t]}">${t}</span><b>${n}</b><span class="muted">명</span></div>${body}</div>`;
+  const col = (t, body, n, wide) => `<div class="crew-t${wide ? ' wide' : ''}" style="--c:${TEAM_C[t]}"><div class="crew-h"><span class="tchip" style="--c:${TEAM_C[t]}">${t}</span><b>${n}</b><span class="muted">명</span></div>${body}</div>`;
   const of = t => S.team.filter(m => m.team === t);
-  const art = of('아트팀');
-  const [g3d, g2d, gEtc] = ['3D', '2D', '기타'].map(g => {
-    const rows = [...ART_PARTS.filter(p => p[0] === g).map(p => p[1]), ...(g === '기타' ? ['미정'] : [])].map(label => {
-      const ms = art.filter(m => { const [pg, pl] = artPart(m.role); return pg === g && pl === label; });
-      return ms.length ? `<div class="crew-r"><span class="nm">${g === '기타' ? '' : g + ' '}${label}</span><span class="num">${ms.length}명</span><span class="crew-n">${nameList(ms)}</span></div>` : '';
-    }).join('');
-    const n = art.filter(m => artPart(m.role)[0] === g).length;
-    return rows ? `<div><div class="crew-k">${g} · ${n}명</div>${rows}</div>` : '';
-  });
-  const groups = [g3d, `${g2d}${gEtc}`].filter(Boolean).map(x => `<div>${x}</div>`).join('');
+  // 역할에 3D · 2D · UI 같은 파트가 적힌 팀은 파트별로, 아니면 이름만
+  const parts = ms => {
+    const [g3d, g2d, gEtc] = ['3D', '2D', '기타'].map(g => {
+      const rows = [...ART_PARTS.filter(p => p[0] === g).map(p => p[1]), ...(g === '기타' ? ['미정'] : [])].map(label => {
+        const hit = ms.filter(m => { const [pg, pl] = artPart(m.role); return pg === g && pl === label; });
+        return hit.length ? `<div class="crew-r"><span class="nm">${g === '기타' ? '' : g + ' '}${label}</span><span class="num">${hit.length}명</span><span class="crew-n">${nameList(hit)}</span></div>` : '';
+      }).join('');
+      const n = ms.filter(m => artPart(m.role)[0] === g).length;
+      return rows ? `<div><div class="crew-k">${g} · ${n}명</div>${rows}</div>` : '';
+    });
+    return [g3d, `${g2d}${gEtc}`].filter(Boolean).map(x => `<div>${x}</div>`).join('');
+  };
+  const cols = TEAMS.map(t => {
+    const ms = of(t);
+    const split = ms.some(m => artPart(m.role)[1] !== '미정');
+    return split
+      ? col(t, `<div class="crew-g">${parts(ms)}</div>`, ms.length, true)
+      : col(t, `<div class="crew-n">${nameList(ms) || '<span class="muted">아직 없음</span>'}</div>`, ms.length);
+  }).join('');
   const none = S.team.filter(m => !TEAMS.includes(m.team));
-  return `<section class="panel full">${head}<div class="crew">
-    ${col('기획팀', `<div class="crew-n">${nameList(of('기획팀')) || '<span class="muted">없음</span>'}</div>`, of('기획팀').length)}
-    ${col('아트팀', `<div class="crew-g">${groups || '<span class="muted">없음</span>'}</div>`, art.length)}
-    ${col('프밍팀', `<div class="crew-n">${nameList(of('프밍팀')) || '<span class="muted">없음</span>'}</div>`, of('프밍팀').length)}
-  </div>${none.length ? `<p class="empty">팀 미지정 ${none.length}명: ${nameList(none)}</p>` : ''}</section>`;
+  return `<section class="panel full">${head}<div class="crew">${cols}</div>${none.length ? `<p class="empty">팀 미지정 ${none.length}명: ${nameList(none)}</p>` : ''}</section>`;
 }
 
 V.overview = () => {
@@ -1430,25 +1473,130 @@ function artForm(files, x){
     onDelete: x ? async () => { await remove('art', x.id); await dropAssets([x.assetId]); } : null
   });
 }
+const teamList = () => TEAMS.map(n => ({name: n, color: TEAM_C[n]}));
+async function saveTeamDoc(members, teams){
+  try { await db.doc('settings/team').set({members, teams}); } catch (e) { throw new Error(dbErr(e)); }
+}
+function parseTeamNames(text){
+  const names = [...new Set(text.split(/[,\n]/).map(s => s.trim()).filter(Boolean))];
+  const bad = names.find(n => !TEAM_NAME_OK(n));
+  if (bad) throw new Error(`팀 이름 "${bad}"은(는) 쓸 수 없어요. 20자 이하로, / , < > " ' & 없이 적어 주세요. "공통"도 쓸 수 없어요.`);
+  if (!names.length) throw new Error('팀을 하나 이상 적어 주세요.');
+  if (names.length > 12) throw new Error('팀은 12개까지 만들 수 있어요.');
+  return names;
+}
+function addTeamForm(){
+  if (!guard()) return;
+  const used = new Set(Object.values(TEAM_C));
+  openForm({
+    title: '팀 추가',
+    fields: [
+      {key:'name', label:'팀 이름', wide:true, required:true, ph:'예: 사운드팀'},
+      {key:'color', label:'색', type:'color'}
+    ],
+    values: {color: PALETTE.find(c => !used.has(c)) || PALETTE[0]},
+    saveLabel: '추가',
+    onSave: async v => {
+      const [name] = parseTeamNames(v.name);
+      if (TEAMS.includes(name)) throw new Error(`"${name}"은(는) 이미 있어요.`);
+      await saveTeamDoc(S.team, [...teamList(), {name, color: v.color}]);
+      toast(`${name}을(를) 추가했어요. 팀원 명단에서 사람을 넣어 주세요.`);
+    }
+  });
+}
+/* 팀원 명단: 위는 팀 목록(추가 · 삭제), 아래는 이름 / 팀 / 역할 표. 저장을 눌러야 반영 */
 function teamForm(){
   const ro = !canWrite;
-  openForm({
-    title: '팀원 명단',
-    fields: [{key:'members', label:'한 줄에 한 명, "이름 / 팀 / 역할"', hint:'팀은 아트팀 · 프밍팀 · 기획팀', type:'textarea', ph:'서하민 / 아트팀 / 3D 배경 · 아트 팀장'}],
-    values: {members: S.team.map(m => [m.name, m.team, m.role].filter(Boolean).join(' / ')).join('\n')},
-    saveLabel: ro ? '닫기' : '저장',
-    onSave: async v => {
-      if (ro) return;
-      if (!guard()) throw new Error('수정 권한이 없어요.');
-      const members = v.members.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-        const parts = l.split('/').map(s => s.trim());
-        const name = parts.shift();
-        const team = TEAMS.includes(parts[0]) ? parts.shift() : '';
-        return {name, team, role: parts.join(' / ')};
-      }).filter(m => m.name);
-      try { await db.doc('settings/team').set({members}); } catch (e) { throw new Error(dbErr(e)); }
-      toast('팀원 명단을 저장했어요.');
+  let teams = teamList();
+  const order = n => { const i = teams.findIndex(t => t.name === n); return i < 0 ? 99 : i; };
+  let rows = S.team.map((m, i) => ({name: m.name || '', team: TEAMS.includes(m.team) ? m.team : '', role: m.role || '', i}))
+    .sort((a, b) => order(a.team) - order(b.team) || a.i - b.i);
+  let filter = '';
+  const teamOptions = sel => `<option value="" ${sel ? '' : 'selected'}>팀 미지정</option>${teams.map(t => `<option ${t.name === sel ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}`;
+  const count = n => rows.filter(r => r.name.trim() && r.team === n).length;
+  const tcol = n => (teams.find(t => t.name === n) || {}).color || 'var(--ink-3)';
+  const paint = () => {
+    const shown = rows.map((r, i) => ({...r, idx: i})).filter(r => !filter || r.team === filter || (filter === '_none' && !r.team));
+    modal.querySelector('#rTeams').innerHTML = `
+      <button type="button" class="chip" data-rf="" aria-pressed="${!filter}">전체<span class="n">${rows.filter(r => r.name.trim()).length}</span></button>
+      ${teams.map((t, i) => `<span class="rteam"><button type="button" class="chip dot" style="--c:${t.color}" data-rf="${esc(t.name)}" aria-pressed="${filter === t.name}">${esc(t.name)}<span class="n">${count(t.name)}</span></button>${ro ? '' : `<button type="button" class="rx" data-rdel-team="${i}" aria-label="${esc(t.name)} 삭제" title="팀 삭제">×</button>`}</span>`).join('')}
+      ${rows.some(r => r.name.trim() && !r.team) ? `<button type="button" class="chip" data-rf="_none" aria-pressed="${filter === '_none'}">팀 미지정<span class="n">${rows.filter(r => r.name.trim() && !r.team).length}</span></button>` : ''}`;
+    modal.querySelector('#rBody').innerHTML = shown.length ? shown.map(r => ro
+      ? `<tr><td>${esc(r.name)}</td><td>${r.team ? `<span class="tchip" style="--c:${tcol(r.team)}">${esc(r.team)}</span>` : '<span class="muted">미지정</span>'}</td><td>${esc(r.role)}</td></tr>`
+      : `<tr>
+          <td><input data-ri="${r.idx}" data-rk="name" value="${esc(r.name)}" aria-label="이름" placeholder="이름"></td>
+          <td><select data-ri="${r.idx}" data-rk="team" aria-label="팀" style="--c:${tcol(r.team)}">${teamOptions(r.team)}</select></td>
+          <td><input data-ri="${r.idx}" data-rk="role" value="${esc(r.role)}" aria-label="역할" placeholder="예: 3D 배경 · 팀장"></td>
+          <td><button type="button" class="rx" data-rdel="${r.idx}" aria-label="${esc(r.name || '이 줄')} 빼기" title="빼기">×</button></td>
+        </tr>`).join('') : `<tr><td colspan="4" class="muted">${filter ? '이 팀에 아직 사람이 없어요.' : '팀원이 없어요.'}</td></tr>`;
+  };
+  modal.innerHTML = `<div class="sheet roster" role="dialog" aria-modal="true" aria-labelledby="mTitle"><form id="mForm" novalidate>
+    <div class="sheet-h"><h2 id="mTitle">팀원 명단</h2><button type="button" class="x" data-close aria-label="닫기">×</button></div>
+    <div class="rsec">
+      <div class="flab">팀</div>
+      <div class="chips" id="rTeams"></div>
+      ${ro ? '' : `<div class="radd"><input id="rNewTeam" placeholder="새 팀 이름 (예: 사운드팀)" aria-label="새 팀 이름" autocomplete="off"><button type="button" class="ghost" id="rAddTeam">+ 팀 추가</button></div>`}
+    </div>
+    <div class="rsec">
+      <div class="flab">팀원 <span class="hint">역할에 "팀장"을 넣으면 개요에서 굵게 보여요 · 3D / 2D / UI를 넣으면 파트별로 나눠져요</span></div>
+      <div class="rwrap"><table class="rtable"><thead><tr><th>이름</th><th>팀</th><th>역할</th>${ro ? '' : '<th><span class="sr">빼기</span></th>'}</tr></thead><tbody id="rBody"></tbody></table></div>
+      ${ro ? '' : '<button type="button" class="ghost radd-row" id="rAddRow">+ 한 명 추가</button>'}
+    </div>
+    <p class="ferr" id="mErr" hidden></p>
+    <div class="sheet-f"><span class="sp"></span><button type="button" class="ghost" data-close>${ro ? '닫기' : '취소'}</button>${ro ? '' : '<button type="submit" class="primary" id="mSave">저장</button>'}</div>
+  </form></div>`;
+  modal.hidden = false;
+  paint();
+  const form = $('#mForm'), err = $('#mErr');
+  const showErr = m => { err.textContent = m; err.hidden = false; };
+  form.addEventListener('input', e => {
+    const el = e.target.closest('[data-ri]'); if (!el) return;
+    rows[+el.dataset.ri][el.dataset.rk] = el.value;
+    if (el.dataset.rk === 'team') paintTeamsOnly();
+  });
+  const paintTeamsOnly = () => { const f = document.activeElement; paint(); if (f && f.dataset && f.dataset.ri) modal.querySelector(`[data-ri="${f.dataset.ri}"][data-rk="${f.dataset.rk}"]`)?.focus(); };
+  form.addEventListener('click', e => {
+    const f = e.target.closest('[data-rf]'); if (f) { filter = f.dataset.rf; return paint(); }
+    const dr = e.target.closest('[data-rdel]'); if (dr) { rows.splice(+dr.dataset.rdel, 1); return paint(); }
+    const dt = e.target.closest('[data-rdel-team]');
+    if (dt) {
+      const t = teams[+dt.dataset.rdelTeam], n = count(t.name);
+      if (teams.length <= 1) return showErr('팀은 하나 이상 있어야 해요.');
+      if (n && !dt.classList.contains('armed')) { dt.classList.add('armed'); dt.textContent = `${n}명 미지정으로 삭제?`; return; }
+      teams = teams.filter(x => x !== t);
+      rows.forEach(r => { if (r.team === t.name) r.team = ''; });
+      if (filter === t.name) filter = '';
+      return paint();
     }
+  });
+  const addTeam = () => {
+    const inp = $('#rNewTeam'); err.hidden = true;
+    let name;
+    try { [name] = parseTeamNames(inp.value); } catch (x) { return showErr(x.message); }
+    if (teams.some(t => t.name === name)) return showErr(`"${name}"은(는) 이미 있어요.`);
+    const used = new Set(teams.map(t => t.color));
+    teams.push({name, color: TEAM_PAL.find(c => !used.has(c)) || TEAM_PAL[teams.length % TEAM_PAL.length]});
+    inp.value = ''; filter = name; paint(); inp.focus();
+  };
+  if (!ro) {
+    $('#rAddTeam').addEventListener('click', addTeam);
+    $('#rNewTeam').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addTeam(); } });
+    $('#rAddRow').addEventListener('click', () => {
+      rows.push({name: '', team: filter && filter !== '_none' ? filter : '', role: ''});
+      filter = filter === '_none' ? '' : filter; paint();
+      modal.querySelector(`[data-ri="${rows.length - 1}"][data-rk="name"]`)?.focus();
+    });
+  }
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (ro) return closeModal();
+    if (!guard()) return showErr('수정 권한이 없어요.');
+    const members = rows.map(r => ({name: r.name.trim(), team: teams.some(t => t.name === r.team) ? r.team : '', role: r.role.trim()})).filter(m => m.name);
+    const dup = members.map(m => m.name).find((n, i, a) => a.indexOf(n) !== i);
+    if (dup) return showErr(`"${dup}"이(가) 두 번 들어 있어요. 한 줄은 지워 주세요.`);
+    const btn = $('#mSave'); btn.disabled = true; btn.textContent = '저장 중…'; err.hidden = true;
+    try { await saveTeamDoc(members, teams); closeModal(); toast(`팀원 명단을 저장했어요. (${teams.length}팀 · ${members.length}명)`); }
+    catch (x) { showErr(x.message || '저장하지 못했어요.'); btn.disabled = false; btn.textContent = '저장'; }
   });
 }
 function goalForm(g){
@@ -1550,6 +1698,7 @@ main.addEventListener('click', e => {
     case 'open-report': setView('reports'); requestAnimationFrame(() => document.getElementById('rep-' + id)?.scrollIntoView({block:'center'})); return;
     case 'upload-art': if (guard()) { if (me) $('#artFile').click(); else meForm(() => toast('이제 이미지 올리기를 다시 눌러 주세요.')); } return;
     case 'team-roster': return teamForm();
+    case 'team-add': return addTeamForm();
     case 'view-art': { const a = byId('art', id); if (a) openLightbox(a.assetId, a.title, a); return; }
     case 'view-img': return openLightbox(el.dataset.src, el.dataset.cap);
     case 'art-cat': S.art.cat = el.dataset.cat; return render();
@@ -1652,8 +1801,11 @@ async function boot(){
     if (modal.hidden) render(); else pending = true;
   }, onErr));
   db.doc('settings/team').onSnapshot(snap => {
-    S.team = snap.exists && Array.isArray(snap.data().members) ? snap.data().members : [];
-    if (S.view === 'overview') { if (modal.hidden) render(); else pending = true; }
+    const d = snap.exists ? snap.data() : {};
+    S.team = Array.isArray(d.members) ? d.members : [];
+    applyTeams(d.teams);
+    paintChrome();
+    if (modal.hidden) render(); else pending = true;
   }, () => {});
 }
 let pending = false;
