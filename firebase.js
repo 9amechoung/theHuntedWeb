@@ -119,9 +119,9 @@ export const assets = {
 };
 
 /* ---------- 로그인 ---------- */
-// 팀원 명단 · 팀 목록은 이 계정만 고칠 수 있음 (Firestore 보안 규칙에서도 같은 이메일로 막음)
-export const ADMIN_EMAIL = 'haminoj@admin.km';
-export const isAdminUser = u => !!(u && u.email && u.email.toLowerCase() === ADMIN_EMAIL);
+// 팀원 명단 · 팀 목록 · 종류 · 일정은 이 계정들만 고칠 수 있음 (Firestore 보안 규칙에도 같은 목록을 넣어야 함)
+export const ADMIN_EMAILS = ['haminoj@admin.km', 'admin@admin.km'];
+export const isAdminUser = u => !!(u && u.email && ADMIN_EMAILS.includes(u.email.toLowerCase()));
 export const onAuth = cb => onAuthStateChanged(auth, cb);
 export const login = (email, pw) => signInWithEmailAndPassword(auth, email, pw);
 export const logout = () => signOut(auth);
