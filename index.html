@@ -64,7 +64,9 @@ button{cursor:pointer}
 h1,h2,h3{margin:0;text-wrap:balance}
 
 /* 상단 */
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:var(--frame)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--panel);border-bottom:var(--frame);transition:transform .2s}
+/* 아래로 스크롤하면 메뉴 줄 숨김, 위로 올리면 다시 보임 */
+body.top-hide .top{transform:translateY(calc(-100% - env(safe-area-inset-top,0px)))}
 .top-in{max-width:1280px;margin:0 auto;padding:10px 20px 0;display:flex;flex-wrap:wrap;align-items:flex-end;gap:4px 24px}
 .brand{display:flex;align-items:baseline;gap:10px;padding-bottom:10px}
 .logo{font-family:var(--f-logo);font-size:26px;letter-spacing:.06em;line-height:1}
@@ -218,7 +220,9 @@ button.trow:hover{background:var(--slate-soft)}
 .card.done .ct{color:var(--ink-3);text-decoration:line-through}
 
 /* 타임라인 */
-.twrap{overflow-x:auto;border:var(--frame);background:var(--panel)}
+.twrap{overflow:auto;border:var(--frame);background:var(--panel);max-height:max(320px,calc(100vh - var(--stick-top,0px) - var(--tlsh,160px) - 24px))}
+/* 타임라인 위쪽 버튼 · 필터가 스크롤해도 붙어 있게 */
+.tl-sticky{position:sticky;top:var(--stick-top,0px);z-index:15;display:flex;flex-direction:column;gap:12px;background:var(--paper);margin:-12px -20px 0;padding:12px 20px 12px;box-shadow:0 1px 0 var(--rule);transition:top .2s}
 .tl-in{position:relative;width:var(--tw)}
 .tl-head{position:sticky;top:0;height:58px;border-bottom:1.5px solid var(--ink);background:var(--panel);z-index:2}
 .tl-m{position:absolute;top:6px;font-weight:700;font-size:14px;white-space:nowrap;padding-left:6px}
@@ -265,7 +269,7 @@ button.trow:hover{background:var(--slate-soft)}
 /* 캘린더 + 사이드 */
 .calwrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
 .calmain{display:flex;flex-direction:column;gap:20px;min-width:0}
-.calside{position:sticky;top:calc(env(safe-area-inset-top,0px) + 110px);min-width:0;display:flex;flex-direction:column;gap:20px}
+.calside{position:sticky;top:calc(var(--stick-top,0px) + 16px);transition:top .2s;min-width:0;display:flex;flex-direction:column;gap:20px}
 .calteams{display:flex;flex-wrap:wrap;gap:6px;padding:12px 14px 4px}
 .calteam-hint{margin:0;padding:4px 14px 12px;font-size:12px;color:var(--ink-3)}
 .calside .goal{flex-wrap:wrap}
@@ -359,7 +363,7 @@ button.trow:hover{background:var(--slate-soft)}
 
 /* 작업 보고 */
 .day{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:start}
-.dayh{position:sticky;top:120px;display:flex;flex-direction:column;gap:2px;padding-top:4px}
+.dayh{position:sticky;top:calc(var(--stick-top,0px) + 16px);transition:top .2s;display:flex;flex-direction:column;gap:2px;padding-top:4px}
 .dayh b{font-family:var(--f-mono);font-weight:500;font-size:26px;line-height:1;letter-spacing:0}
 .dayh span{color:var(--ink-2);font-size:13px}
 .reps{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -459,6 +463,7 @@ button.trow:hover{background:var(--slate-soft)}
 @media (max-width:560px){
   .top-in{padding:8px 16px 0;gap:0 12px}
   main{padding-inline:16px;padding-block:16px 48px}
+  .tl-sticky{margin-inline:-16px;padding-inline:16px}
   .vtitle{font-size:24px}
   .cell{min-height:74px;padding:2px}
   .it{font-size:10.5px;padding:0 3px;border-left-width:2px}
@@ -817,6 +822,7 @@ function render(){
   main.innerHTML = html;
   main.classList.toggle('selmode', selOn());
   main.classList.toggle('dlmode', selDl());
+  if (typeof syncSticky === 'function') requestAnimationFrame(syncSticky);
   if (keep) {
     const n = document.getElementById(keep.id);
     if (n) { n.value = keep.v; n.focus(); try { n.setSelectionRange(keep.s, keep.s); } catch {} }
@@ -1222,6 +1228,7 @@ V.timeline = () => {
   const undated = S.d.tasks.filter(x => !isDate(x.start) && !isDate(x.due) && teamHit(x.team, f.team));
   const s = parse(s0), e = parse(s1);
   return `
+  <div class="tl-sticky">
   <div class="bar">
     <h1 class="vtitle">타임라인</h1><span class="muted num">${s.getMonth()+1}/${s.getDate()} – ${e.getMonth()+1}/${e.getDate()}</span><span class="sp"></span>
     <button type="button" class="icon" data-act="tl-prev" aria-label="2주 앞으로">‹</button>
@@ -1238,6 +1245,7 @@ V.timeline = () => {
   </div>
   <div class="bar tl-pickline">
     ${f.pick ? `<b>${md(f.pick)}에 걸친 일 ${shown.filter(x => x.lo <= f.pick && x.hi >= f.pick).length}개</b><span class="muted">진하게 보이는 막대가 그날까지 이어지는 일이에요</span><button type="button" class="linkbtn" data-act="tl-pick" data-date="${f.pick}">표시 끄기</button>` : '<span class="muted">위쪽 날짜를 누르면 그날에 걸친 일만 진하게 보여요</span>'}
+  </div>
   </div>
   <div class="twrap"><div class="tl-in" style="--tw:${tw}px;--w:${W}px">
     <div class="tl-head">${head}</div>
@@ -2022,6 +2030,22 @@ main.addEventListener('drop', async e => {
 });
 window.addEventListener('hashchange', () => { const h = location.hash.slice(1); if (h !== S.view && VIEWS.some(v => v[0] === h)) setView(h); });
 $('#meBtn').addEventListener('click', () => meForm());
+/* 메뉴 줄 숨김 · 고정 위치: --stick-top(메뉴가 보이면 그 높이, 숨으면 0), --tlsh(타임라인 위쪽 묶음 높이) */
+let lastY = window.scrollY, topHidden = false;
+function syncSticky(){
+  const root = document.documentElement.style, top = $('.top');
+  root.setProperty('--stick-top', (topHidden || !top ? 0 : top.offsetHeight) + 'px');
+  const tl = $('.tl-sticky');
+  if (tl) root.setProperty('--tlsh', tl.offsetHeight + 'px');
+}
+window.addEventListener('scroll', () => {
+  const y = window.scrollY, dy = y - lastY;
+  if (Math.abs(dy) < 6) return;
+  const hide = dy > 0 && y > 80;
+  if (hide !== topHidden) { topHidden = hide; document.body.classList.toggle('top-hide', hide); syncSticky(); }
+  lastY = y;
+}, {passive: true});
+window.addEventListener('resize', syncSticky);
 let rz; window.addEventListener('resize', () => { if (S.view !== 'timeline') return; clearTimeout(rz); rz = setTimeout(render, 200); });
 
 /* ---------- 연결 ---------- */
