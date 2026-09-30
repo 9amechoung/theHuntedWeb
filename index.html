@@ -478,8 +478,14 @@ const em = document.getElementById('gateEmail'), pw = document.getElementById('g
 const err = document.getElementById('gateErr'), btn = document.getElementById('gateBtn');
 try { em.value = localStorage.getItem('hunted.email') || ''; } catch {}
 let ready = false;
-onAuth(u => {
+// 브라우저에 남은 로그인이 지워진 계정이면 자동 로그아웃 → 로그인 창
+const DEAD = ['auth/user-not-found', 'auth/user-token-expired', 'auth/user-disabled', 'auth/invalid-user-token'];
+onAuth(async u => {
   if (!u) { gate.hidden = false; (em.value ? pw : em).focus(); return; }
+  try { await u.reload(); }
+  catch (x) {
+    if (DEAD.includes(x && x.code)) { await logout(); err.textContent = '로그인 정보가 바뀌었어요. 다시 로그인해 주세요.'; err.hidden = false; return; }
+  }
   gate.hidden = true;
   document.getElementById('outBtn').hidden = false;
   if (ready) return;
@@ -690,7 +696,7 @@ function render(){
   const keep = a && a.id && main.contains(a) && 'value' in a ? {id: a.id, v: a.value, s: a.selectionStart} : null;
   let html = '';
   if (S.dbState === 'none') html += `<div class="notice">저장소에 연결할 수 없어요. 인터넷 연결을 확인하고 페이지를 새로 고쳐 주세요.</div>`;
-  if (S.dbState === 'error') html += `<div class="notice">저장소 연결이 끊겼어요. 페이지를 새로 고쳐 주세요.</div>`;
+  if (S.dbState === 'error') html += `<div class="notice">저장소 연결이 끊겼어요. 새로 고쳐도 안 되면 다시 로그인해 주세요. <button type="button" class="ghost" data-act="relogin">로그아웃하고 다시 로그인</button></div>`;
   html += (V[S.view] || V.overview)();
   main.innerHTML = html;
   main.classList.toggle('selmode', selOn());
@@ -1707,6 +1713,7 @@ main.addEventListener('click', e => {
     case 'upload-art': if (guard()) { if (me) $('#artFile').click(); else meForm(() => toast('이제 이미지 올리기를 다시 눌러 주세요.')); } return;
     case 'team-roster': return teamForm();
     case 'team-add': return addTeamForm();
+    case 'relogin': return $('#outBtn').click();
     case 'view-art': { const a = byId('art', id); if (a) openLightbox(a.assetId, a.title, a); return; }
     case 'view-img': return openLightbox(el.dataset.src, el.dataset.cap);
     case 'art-cat': S.art.cat = el.dataset.cat; return render();
