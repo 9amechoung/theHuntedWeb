@@ -1032,7 +1032,10 @@ function monthDue(month){
     }).join('') : emptyMsg('tasks', `${m}월에 마감되는 할 일이나 일정이 없어요.`)}</div>
   </section>`;
 }
+// 월 목표는 관리자만 추가 · 수정 · 삭제 · 완료 표시. 다른 사람은 보기만
+const canGoal = () => canWrite && isAdmin;
 function goalsPanel(month, where){
+  const ed = canGoal();
   const m = Number(month.slice(5, 7));
   const gs = S.d.goals.filter(g => g.month === month).sort((a, b) => (a.createdAt||0) - (b.createdAt||0));
   const done = gs.filter(g => g.done).length;
@@ -1042,9 +1045,9 @@ function goalsPanel(month, where){
     <div class="rows">${gs.length ? gs.map(g => `<div class="goal ${g.done ? 'done' : ''}">
         <button type="button" class="gt" data-act="edit-goal" data-id="${esc(g.id)}">${esc(g.title)}</button>
         <span class="gby">${g.done && g.doneBy ? `${esc(g.doneBy)} 완료${isDate(g.doneAt) ? ' · ' + short(g.doneAt) : ''}` : esc(byText(g))}</span>
-        ${canWrite ? `<button type="button" class="gdone" data-act="goal-done" data-id="${esc(g.id)}" aria-pressed="${!!g.done}" title="${g.done ? '누르면 완료를 취소해요' : '완료로 표시'}">${g.done ? '✓ 완료' : '완료'}</button>` : (g.done ? '<span class="st done">완료</span>' : '')}
-      </div>`).join('') : emptyMsg('goals', `${m}월 목표가 없어요.${canWrite ? ' 아래 칸에 이번 달에 끝낼 목표를 적어 주세요.' : ''}`)}</div>
-    ${canWrite ? `<form class="qa" data-goal-add="${esc(month)}"><input id="goal-${where}-${esc(month)}" placeholder="${m}월 목표 추가 후 Enter" aria-label="${m}월 목표 추가" autocomplete="off"><button type="submit">추가</button></form>` : ''}
+        ${ed ? `<button type="button" class="gdone" data-act="goal-done" data-id="${esc(g.id)}" aria-pressed="${!!g.done}" title="${g.done ? '누르면 완료를 취소해요' : '완료로 표시'}">${g.done ? '✓ 완료' : '완료'}</button>` : (g.done ? '<span class="st done">완료</span>' : '')}
+      </div>`).join('') : emptyMsg('goals', `${m}월 목표가 없어요.${ed ? ' 아래 칸에 이번 달에 끝낼 목표를 적어 주세요.' : ''}`)}</div>
+    ${ed ? `<form class="qa" data-goal-add="${esc(month)}"><input id="goal-${where}-${esc(month)}" placeholder="${m}월 목표 추가 후 Enter" aria-label="${m}월 목표 추가" autocomplete="off"><button type="submit">추가</button></form>` : ''}
   </section>`;
 }
 
@@ -2010,6 +2013,7 @@ function kindsForm(){
 }
 function goalForm(g){
   if (!guard()) return;
+  if (!isAdmin) return toast('월 목표는 관리자만 고칠 수 있어요.');
   openForm({
     title: '이달 목표 편집',
     fields: [
@@ -2027,6 +2031,7 @@ function goalForm(g){
   });
 }
 async function toggleGoal(g){
+  if (!canGoal()) return toast('월 목표는 관리자만 완료로 표시할 수 있어요.');
   const done = !g.done;
   try {
     await save('goals', g.id, done ? {done:true, doneBy: me.name, doneTeam: me.team, doneAt: today()} : {done:false, doneBy:'', doneTeam:'', doneAt:''});
@@ -2109,7 +2114,7 @@ main.addEventListener('click', e => {
     case 'new-task-on': { const d = el.dataset.date; return needMe(() => taskForm(null, {start: d, due: d})); }
     case 'edit-ms': return canWrite ? msForm(byId('milestones', id)) : toast(`◆ ${byId('milestones', id)?.title || ''}`);
     case 'new-ms': return needMe(() => msForm(null));
-    case 'edit-goal': { const g = byId('goals', id); return g && (canWrite ? goalForm(g) : toast(`${g.title}${byText(g) ? ' · 입력 ' + byText(g) : ''}`)); }
+    case 'edit-goal': { const g = byId('goals', id); return g && (canGoal() ? goalForm(g) : toast(`${g.title}${byText(g) ? ' · 입력 ' + byText(g) : ''}`)); }
     case 'goal-done': { const g = byId('goals', id); return g && needMe(() => toggleGoal(g)); }
     case 'edit-proj': return projForm(byId('projects', id));
     case 'new-proj': return projForm(null);
@@ -2165,7 +2170,7 @@ main.addEventListener('submit', e => {
     inp.value = '';
     const who = {by: me.name, team: me.team, createdAt: Date.now()};
     try {
-      if (f.dataset.goalAdd) await save('goals', null, {title, month: f.dataset.goalAdd, done: false, ...who});
+      if (f.dataset.goalAdd) { if (!canGoal()) throw new Error('월 목표는 관리자만 추가할 수 있어요.'); await save('goals', null, {title, month: f.dataset.goalAdd, done: false, ...who}); }
       else await save('tasks', null, {title, projectId: f.dataset.qa === '_none' ? '' : f.dataset.qa, status:'todo', priority:'mid', start: today(), ...who});
     } catch (x) { inp.value = title; toast(x.message); }
   });
