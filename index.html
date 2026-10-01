@@ -252,6 +252,39 @@ button.trow:hover{background:var(--slate-soft)}
 .tb.ev{border-style:dashed}
 .tb.cut-l{border-left-style:dotted}
 .tb.cut-r{border-right-style:dotted}
+/* 타임라인 · 사람별: 왼쪽 이름 칸 고정, 오른쪽은 날(또는 주) 칸 */
+.seg{display:inline-flex;border:1.5px solid var(--ink)}
+.seg button{border:0;background:var(--panel);padding:4px 10px;font-size:13px;cursor:pointer}
+.seg button+button{border-left:1.5px solid var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel);font-weight:700}
+.pv{position:relative;width:calc(var(--nw) + var(--tw))}
+.pv-h{position:sticky;top:0;z-index:4;display:flex;background:var(--panel);border-bottom:1.5px solid var(--ink)}
+.pv-h>.pv-n{display:flex;align-items:flex-end;padding-bottom:8px;font-weight:700}
+.pv-n{position:sticky;left:0;z-index:3;flex:0 0 var(--nw);width:var(--nw);background:var(--panel);border-right:1.5px solid var(--ink);padding:4px 10px;display:flex;align-items:center;gap:6px;min-width:0}
+.pv-n b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.pv-n i{flex:0 0 8px;width:8px;height:8px}
+.pv-n .num{margin-left:auto;font-size:11px;color:var(--ink-3)}
+.pv-hc{position:relative;width:var(--tw)}
+.pv-r{position:relative;height:24px;border-bottom:1px solid var(--rule)}
+.pv-r3{height:34px;border-bottom:0}
+.pv-g{position:absolute;top:0;bottom:0;padding:3px 6px;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:1px solid var(--rule)}
+.pv-g:first-child{border-left:0}
+.pv-c{position:absolute;top:0;height:34px;width:var(--w);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}
+.pv-c small{font-size:10px;color:var(--ink-3)}
+.pv-c span{font-family:var(--f-mono);font-size:12px}
+.pv-c.sun span,.pv-c.sun small{color:var(--red)}
+.pv-c.sat span,.pv-c.sat small{color:var(--blue)}
+.pv-c.td span{background:var(--ink);color:var(--panel);padding:0 4px}
+.pv-b{position:relative}
+.pv-bg{left:var(--nw)}
+.pv-bg .phx{position:absolute;top:0;bottom:0;width:2px;background:var(--ink)}
+.pv-row{display:flex;border-bottom:1px solid var(--rule);min-height:32px}
+.pv-row.none .pv-n b{color:var(--ink-3)}
+.pv-l{position:relative;width:var(--tw)}
+.pv-b>.empty{padding:16px}
+@media (max-width:560px){.pv-n{padding:4px 6px;gap:4px}.pv-n .num,.pv-h>.pv-n{font-size:12px}.pv-row .pv-n .num{display:none}}
+.tb.slim{height:20px;padding:0 5px;flex-direction:row;align-items:center;justify-content:flex-start;overflow:hidden;font-size:11px}
+.tb.slim b{font-size:11.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis}
 .undated{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .undated button{border:1px dashed var(--ink-3);background:var(--panel);font-size:12.5px;padding:2px 8px}
 .glegend{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12px;color:var(--ink-2);align-items:center}
@@ -630,7 +663,7 @@ const S = {
   dbState: 'loading',
   view: 'overview',
   cal: {mode: store.get('calMode') || 'month', anchor: today(), team: store.get('calTeam') || ''},
-  tl: {anchor: today(), team: '', hideDone: false},
+  tl: {anchor: today(), team: '', hideDone: false, mode: ['all','pday','pweek'].includes(store.get('tlMode')) ? store.get('tlMode') : 'all', busy: false},
   kb: {project: '', who: '', team: ''},
   art: {cat: ''},
   rep: {who: '', project: '', team: ''}
@@ -819,7 +852,12 @@ function render(){
   if (S.dbState === 'none') html += `<div class="notice">저장소에 연결할 수 없어요. 인터넷 연결을 확인하고 페이지를 새로 고쳐 주세요.</div>`;
   if (S.dbState === 'error') html += `<div class="notice">저장소 연결이 끊겼어요. 새로 고쳐도 안 되면 다시 로그인해 주세요. <button type="button" class="ghost" data-act="relogin">로그아웃하고 다시 로그인</button></div>`;
   html += (V[S.view] || V.overview)();
+  // 타임라인 가로 스크롤: 데이터만 바뀌면 그 자리 유지, 기간 · 보기를 바꾸면 data-sx 위치(오늘 근처)로
+  const tw0 = $('.twrap', main), twKey = `${S.view}|${S.tl.mode}|${S.tl.anchor}`, sx = tw0 && render.twKey === twKey ? tw0.scrollLeft : null;
+  render.twKey = twKey;
   main.innerHTML = html;
+  const tw1 = $('.twrap', main);
+  if (tw1) tw1.scrollLeft = sx ?? +(tw1.dataset.sx || 0);
   main.classList.toggle('selmode', selOn());
   main.classList.toggle('dlmode', selDl());
   if (typeof syncSticky === 'function') requestAnimationFrame(syncSticky);
@@ -1185,8 +1223,136 @@ V.kanban = () => {
   ${selBar(ts.map(t => 'tasks:' + t.id))}`;
 };
 
+/* 타임라인 보기 방식: 일정순(막대 목록) · 사람별 하루 단위 · 사람별 주 단위 */
+const TL_MODES = [['all','일정순'],['pday','사람별 · 일'],['pweek','사람별 · 주']];
+const tlModes = () => `<div class="seg" role="group" aria-label="보기 방식">${TL_MODES.map(([k, n]) => `<button type="button" data-act="tl-mode" data-mode="${k}" aria-pressed="${S.tl.mode === k}">${n}</button>`).join('')}</div>`;
+// 담당 칸에 '김민솔, 김아영'처럼 여러 명을 적어도 각자 줄에 나옴
+const splitNames = s => String(s || '').split(/[,·/]+/).map(x => x.trim()).filter(Boolean);
+// 몇 월 몇 주차: 일요일 시작 주에서 목요일이 든 달 기준 (월 경계 주가 0주차 · 6주차가 되지 않게)
+const weekNo = d => { const th = addDays(sunday(d), 4); return {m: th.getMonth() + 1, n: Math.floor((th.getDate() - 1) / 7) + 1}; };
+// 게임 차수: 제목에 '1차', '2차'가 들어간 마일스톤 날짜가 든 주까지를 그 차수로 묶음
+const PHASE_RE = /(\d+)\s*차/;
+function phases(){
+  const seen = new Set(), out = [];
+  S.d.milestones.filter(m => isDate(m.date) && PHASE_RE.test(m.title || '')).sort((a, b) => a.date.localeCompare(b.date)).forEach(m => {
+    const n = +PHASE_RE.exec(m.title)[1];
+    if (seen.has(n)) return;
+    seen.add(n);
+    const prev = out[out.length - 1];
+    out.push({n, title: m.title, lo: prev ? iso(addDays(parse(prev.hi), 1)) : '', hi: iso(addDays(sunday(parse(m.date)), 6))});
+  });
+  if (out.length) {   // 1차 시작 = 가장 이른 할 일 · 일정이 든 주
+    const ds = [...S.d.tasks.flatMap(t => [t.start, t.due]), ...S.d.events.map(e => e.date)].filter(isDate).sort();
+    out[0].lo = iso(sunday(parse(ds[0] && ds[0] < out[0].hi ? ds[0] : out[0].hi)));
+  }
+  return out;
+}
+
+function personView(){
+  const f = S.tl, byDay = f.mode === 'pday', t = today();
+  const narrow = matchMedia('(max-width:560px)').matches;
+  // 하루 단위: 지난주 · 이번 주 · 다음 주(+ 넓은 화면은 다다음 주). 주 단위: 지난주부터 12주
+  const N = byDay ? (narrow ? 21 : 28) : (narrow ? 8 : 12), W = byDay ? (narrow ? 34 : 39) : (narrow ? 70 : 92), NW = narrow ? 74 : 128, LH = 24;
+  const start = addDays(sunday(parse(f.anchor)), -7);
+  const cols = Array.from({length: N}, (_, i) => {
+    const lo = addDays(start, byDay ? i : i * 7);
+    return {lo: iso(lo), hi: iso(byDay ? lo : addDays(lo, 6)), d: lo};
+  });
+  const s0 = cols[0].lo, s1 = cols[N - 1].hi;
+  const colOf = ds => cols.findIndex(c => c.hi >= ds);
+  // 위쪽 머리글 세 줄: [월 · 차수] [주차] [날 · 주 번호]
+  const ph = byDay ? [] : phases();
+  const phaseOf = c => ph.find(p => p.hi >= c.lo);
+  const groups = (key, label) => {   // 같은 값이 이어지는 칸을 한 칸으로 합침
+    const out = [];
+    cols.forEach((c, i) => { const k = key(c); const last = out[out.length - 1]; if (last && last.k === k) last.n++; else out.push({k, i, n: 1, label: label(c)}); });
+    return out.map(g => `<span class="pv-g" style="left:${g.i * W}px;width:${g.n * W}px" title="${esc(g.label)}">${esc(g.label)}</span>`).join('');
+  };
+  let row1, row2, row3 = '';
+  if (byDay) {
+    row1 = groups(c => c.d.getFullYear() * 12 + c.d.getMonth(), c => `${c.d.getFullYear()}년 ${c.d.getMonth() + 1}월`);
+    row2 = groups(c => iso(sunday(c.d)), c => { const w = weekNo(c.d); return `${w.m}월 ${w.n}주차`; });
+    cols.forEach((c, i) => { const wd = c.d.getDay(); row3 += `<span class="pv-c ${wd === 0 ? 'sun' : wd === 6 ? 'sat' : ''} ${c.lo === t ? 'td' : ''}" style="left:${i * W}px"><small>${DOW[wd]}</small><span>${c.d.getDate()}</span></span>`; });
+  } else if (ph.length) {
+    row1 = groups(c => { const p = phaseOf(c); return p ? p.n : 'after'; }, c => { const p = phaseOf(c); return p ? `${p.n}차 · ~${short(p.hi)}` : '이후'; });
+    row2 = groups(c => c.d.getFullYear() * 12 + weekNo(c.d).m, c => `${weekNo(c.d).m}월`);
+    cols.forEach((c, i) => { const p = phaseOf(c); const n = p && p.lo ? Math.floor(diff(p.lo, c.lo) / 7) + 1 : ''; row3 += `<span class="pv-c wk ${c.lo <= t && c.hi >= t ? 'td' : ''}" style="left:${i * W}px" title="${short(c.lo)} – ${short(c.hi)}"><small>${short(c.lo)}~</small><span>${n ? n + '주' : '–'}</span></span>`; });
+  } else {
+    row1 = groups(c => c.d.getFullYear() * 12 + weekNo(c.d).m, c => `${weekNo(c.d).m}월`);
+    row2 = '';
+    cols.forEach((c, i) => row3 += `<span class="pv-c wk ${c.lo <= t && c.hi >= t ? 'td' : ''}" style="left:${i * W}px" title="${short(c.lo)} – ${short(c.hi)}"><small>${short(c.lo)}~</small><span>${weekNo(c.d).n}주차</span></span>`);
+  }
+  let bg = '';
+  cols.forEach((c, i) => {
+    if (byDay && (c.d.getDay() === 0 || c.d.getDay() === 6)) bg += `<i class="we" style="left:${i * W}px"></i>`;
+    if (i && (!byDay || c.d.getDay() === 0)) bg += `<i class="wk" style="left:${i * W}px"></i>`;
+    if (!byDay && ph.length && i && phaseOf(c) !== phaseOf(cols[i - 1])) bg += `<i class="phx" style="left:${i * W}px"></i>`;
+  });
+  const ti = colOf(t);
+  if (t >= s0 && t <= s1) bg += `<i class="now" style="left:${ti * W}px"></i>`;
+  // 사람 줄: 팀원 명단 순서(팀별) → 명단에 없는 담당자 → 담당 없음
+  const people = [], seen = new Set();
+  const addP = (name, team) => { if (!name || seen.has(name)) return; seen.add(name); people.push({name, team}); };
+  TEAMS.forEach(tm => S.team.filter(m => m.team === tm).forEach(m => addP(m.name, tm)));
+  S.team.forEach(m => addP(m.name, TEAMS.includes(m.team) ? m.team : ''));
+  const tasks = S.d.tasks.filter(x => !(f.hideDone && x.status === 'done')).map(x => ({x, sp: taskSpan(x), who: splitNames(x.assignee)})).filter(o => o.sp);
+  tasks.forEach(o => o.who.forEach(n => addP(n, rosterTeam(n))));
+  const pteam = f.team && TEAMS.includes(f.team) ? f.team : '';
+  const rows = people.filter(p => !pteam || p.team === pteam).map(p => ({...p, items: tasks.filter(o => o.who.includes(p.name))}));
+  rows.push({name: '', team: '', items: tasks.filter(o => !o.who.length && teamHit(o.x.team, pteam))});
+  let shownRows = 0, busyCnt = 0;
+  const body = rows.map(r => {
+    const inR = r.items.filter(o => o.sp.hi >= s0 && o.sp.lo <= s1).sort((a, b) => a.sp.lo.localeCompare(b.sp.lo) || b.sp.hi.localeCompare(a.sp.hi));
+    if (inR.length && r.name) busyCnt++;
+    if ((f.busy || !r.name) && !inR.length) return '';
+    shownRows++;
+    const lanes = [];   // 줄마다 겹치지 않게 칸을 나눠 쌓음
+    const bars = inR.map(o => {
+      const L = o.sp.lo < s0 ? 0 : colOf(o.sp.lo), R = o.sp.hi > s1 ? N - 1 : colOf(o.sp.hi);
+      let k = lanes.findIndex(end => end < L);
+      if (k < 0) { k = lanes.length; lanes.push(R); } else lanes[k] = R;
+      const x = o.x, st = x.status || 'todo';
+      const cls = [st, 'slim', o.sp.lo < s0 ? 'cut-l' : '', o.sp.hi > s1 ? 'cut-r' : ''].join(' ');
+      return `<button type="button" class="tb ${cls}" style="--c:${tkColor(x)};left:${L * W + 2}px;top:${k * LH + 4}px;width:${(R - L + 1) * W - 4}px" data-act="edit-task" data-id="${esc(x.id)}" title="${esc(tkTip(x, o.sp))}">${x.status === 'done' ? '☑ ' : ''}<b>${esc(x.title)}</b></button>`;
+    }).join('');
+    const h = Math.max(1, lanes.length) * LH + 8;
+    const tc = TEAM_C[r.team];
+    return `<div class="pv-row${r.name ? '' : ' none'}" style="height:${h}px">
+      <div class="pv-n">${r.name ? `<b>${esc(r.name)}</b>${tc ? `<i style="background:${tc}" title="${esc(r.team)}"></i>` : ''}` : '<b>담당 없음</b>'}${inR.length ? `<span class="num">${inR.length}</span>` : ''}</div>
+      <div class="pv-l">${bars}</div>
+    </div>`;
+  }).join('');
+  const s = parse(s0), e = parse(s1);
+  const step = byDay ? '1주' : '4주';
+  return `
+  <div class="tl-sticky">
+  <div class="bar">
+    <h1 class="vtitle">타임라인</h1><span class="muted num">${s.getMonth()+1}/${s.getDate()} – ${e.getMonth()+1}/${e.getDate()}</span>${tlModes()}<span class="sp"></span>
+    <button type="button" class="icon" data-act="tl-prev" aria-label="${step} 앞으로">‹</button>
+    <button type="button" class="ghost" data-act="tl-today">오늘</button>
+    <button type="button" class="icon" data-act="tl-next" aria-label="${step} 뒤로">›</button>
+    ${addBtn('new-task', '+ 할 일')}
+  </div>
+  <div class="bar">
+    <div class="chips" role="group" aria-label="팀"><button type="button" class="chip" data-act="tl-team" data-team="" aria-pressed="${!pteam}">전체</button>${TEAMS.map(tm => `<button type="button" class="chip" data-act="tl-team" data-team="${tm}" aria-pressed="${pteam === tm}">${tm}</button>`).join('')}</div>
+    <button type="button" class="chip" data-act="tl-done" aria-pressed="${f.hideDone}">완료 숨기기</button>
+    <button type="button" class="chip" data-act="tl-busy" aria-pressed="${f.busy}">일 있는 사람만</button>
+    <span class="sp"></span>
+    <span class="muted">이 기간에 일이 잡힌 사람 ${busyCnt}명 · 담당 칸에 이름을 넣은 할 일이 그 사람 줄에 보여요</span>
+  </div>
+  ${!byDay && !ph.length ? `<div class="bar"><span class="muted">마일스톤 제목에 <b>1차</b>, <b>2차</b>처럼 차수를 넣으면 그 날짜가 든 주까지를 한 차수로 묶어 보여 줘요. 지금은 월 · 주차로 보여요.</span></div>` : ''}
+  </div>
+  <div class="twrap" data-sx="${narrow && ti > 2 ? (ti - 2) * W : 0}"><div class="pv" style="--w:${W}px;--nw:${NW}px;--tw:${N * W}px">
+    <div class="pv-h"><div class="pv-n">이름</div><div class="pv-hc"><div class="pv-r">${row1}</div>${row2 ? `<div class="pv-r">${row2}</div>` : ''}<div class="pv-r pv-r3">${row3}</div></div></div>
+    <div class="pv-b"><div class="tl-bg pv-bg">${bg}</div>
+      ${body || `<p class="empty">${loading('tasks') ? '불러오는 중…' : '보여 줄 사람이 없어요. <b>팀원 명단</b>에 이름을 넣거나 할 일의 <b>담당</b> 칸을 채워 주세요.'}</p>`}
+    </div>
+  </div></div>`;
+}
+
 V.timeline = () => {
   const f = S.tl;
+  if (f.mode !== 'all') return personView();
   const narrow = matchMedia('(max-width:560px)').matches;
   const DAYS = narrow ? 28 : 42, W = narrow ? 36 : 46, RH = 44;
   const start = addDays(sunday(parse(f.anchor)), -7);
@@ -1230,7 +1396,7 @@ V.timeline = () => {
   return `
   <div class="tl-sticky">
   <div class="bar">
-    <h1 class="vtitle">타임라인</h1><span class="muted num">${s.getMonth()+1}/${s.getDate()} – ${e.getMonth()+1}/${e.getDate()}</span><span class="sp"></span>
+    <h1 class="vtitle">타임라인</h1><span class="muted num">${s.getMonth()+1}/${s.getDate()} – ${e.getMonth()+1}/${e.getDate()}</span>${tlModes()}<span class="sp"></span>
     <button type="button" class="icon" data-act="tl-prev" aria-label="2주 앞으로">‹</button>
     <button type="button" class="ghost" data-act="tl-today">오늘</button>
     <button type="button" class="icon" data-act="tl-next" aria-label="2주 뒤로">›</button>
@@ -1898,6 +2064,7 @@ function toast(m){ const t = $('#toast'); t.textContent = m; t.hidden = false; c
 $('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) setView(b.dataset.view); });
 $('#teamBtn').addEventListener('click', teamForm);
 const byId = (c, id) => S.d[c].find(x => x.id === id);
+const tlStep = () => S.tl.mode === 'pday' ? 7 : S.tl.mode === 'pweek' ? 28 : 14;
 const shiftCal = n => {
   const a = parse(S.cal.anchor);
   S.cal.anchor = iso(S.cal.mode === 'month' ? new Date(a.getFullYear(), a.getMonth() + n, 1) : addDays(a, 7 * n));
@@ -1964,8 +2131,10 @@ main.addEventListener('click', e => {
     case 'cal-next': return shiftCal(1);
     case 'cal-today': S.cal.anchor = today(); return render();
     case 'cal-week': S.cal.mode = 'week'; S.cal.anchor = el.dataset.date; return render();
-    case 'tl-prev': S.tl.anchor = iso(addDays(parse(S.tl.anchor), -14)); return render();
-    case 'tl-next': S.tl.anchor = iso(addDays(parse(S.tl.anchor), 14)); return render();
+    case 'tl-prev': S.tl.anchor = iso(addDays(parse(S.tl.anchor), -tlStep())); return render();
+    case 'tl-next': S.tl.anchor = iso(addDays(parse(S.tl.anchor), tlStep())); return render();
+    case 'tl-mode': S.tl.mode = el.dataset.mode; store.set('tlMode', S.tl.mode); return render();
+    case 'tl-busy': S.tl.busy = !S.tl.busy; return render();
     case 'kb-set': S.kb[el.dataset.key] = el.dataset.val; return render();
     case 'rep-set': S.rep[el.dataset.key] = el.dataset.val; return render();
     case 'tl-today': S.tl.anchor = today(); return render();
