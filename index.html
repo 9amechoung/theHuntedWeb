@@ -220,7 +220,7 @@ button.trow:hover{background:var(--slate-soft)}
 .card.done .ct{color:var(--ink-3);text-decoration:line-through}
 
 /* 타임라인 */
-.twrap{overflow:auto;border:var(--frame);background:var(--panel);max-height:max(320px,calc(100vh - var(--stick-top,0px) - var(--tlsh,160px) - 24px))}
+.twrap{overflow:auto;overscroll-behavior:contain;border:var(--frame);background:var(--panel);max-height:max(320px,calc(100vh - var(--stick-top,0px) - var(--tlsh,160px) - 24px))}
 /* 타임라인 위쪽 버튼 · 필터가 스크롤해도 붙어 있게 */
 .tl-sticky{position:sticky;top:var(--stick-top,0px);z-index:15;display:flex;flex-direction:column;gap:12px;background:var(--paper);margin:-12px -20px 0;padding:12px 20px 12px;box-shadow:0 1px 0 var(--rule);transition:top .2s}
 .tl-in{position:relative;width:var(--tw)}
@@ -853,11 +853,11 @@ function render(){
   if (S.dbState === 'error') html += `<div class="notice">저장소 연결이 끊겼어요. 새로 고쳐도 안 되면 다시 로그인해 주세요. <button type="button" class="ghost" data-act="relogin">로그아웃하고 다시 로그인</button></div>`;
   html += (V[S.view] || V.overview)();
   // 타임라인 가로 스크롤: 데이터만 바뀌면 그 자리 유지, 기간 · 보기를 바꾸면 data-sx 위치(오늘 근처)로
-  const tw0 = $('.twrap', main), twKey = `${S.view}|${S.tl.mode}|${S.tl.anchor}`, sx = tw0 && render.twKey === twKey ? tw0.scrollLeft : null;
+  const tw0 = $('.twrap', main), twKey = `${S.view}|${S.tl.mode}|${S.tl.anchor}`, same = tw0 && render.twKey === twKey, sx = same ? tw0.scrollLeft : null, sy = same ? tw0.scrollTop : 0;
   render.twKey = twKey;
   main.innerHTML = html;
   const tw1 = $('.twrap', main);
-  if (tw1) tw1.scrollLeft = sx ?? +(tw1.dataset.sx || 0);
+  if (tw1) { tw1.scrollLeft = sx ?? +(tw1.dataset.sx || 0); tw1.scrollTop = sy; }
   main.classList.toggle('selmode', selOn());
   main.classList.toggle('dlmode', selDl());
   if (typeof syncSticky === 'function') requestAnimationFrame(syncSticky);
@@ -2206,6 +2206,22 @@ function syncSticky(){
   root.setProperty('--stick-top', (topHidden || !top ? 0 : top.offsetHeight) + 'px');
   const tl = $('.tl-sticky');
   if (tl) root.setProperty('--tlsh', tl.offsetHeight + 'px');
+  fitTimeline();
+}
+/* 타임라인 표를 화면 남은 높이에 딱 맞춤 → 페이지는 스크롤되지 않고 표 안쪽만 스크롤.
+   그래서 메뉴 · 위쪽 버튼 · 날짜 머리글이 늘 제자리에 있음. 화면이 너무 낮으면 예전처럼 페이지와 같이 스크롤 */
+function fitTimeline(){
+  const tw = $('.twrap', main);
+  if (!tw) return;
+  tw.style.height = tw.style.maxHeight = '';
+  const r = tw.getBoundingClientRect(), y = window.scrollY;
+  const below = document.documentElement.scrollHeight - (r.bottom + y);   // 표 아래에 있는 글 · 여백
+  const top = $('.top'), navH = top ? top.offsetHeight : 0;
+  const h = Math.floor(window.innerHeight - (r.top + y) - below);
+  if (h < 260 || r.top + y < navH) return;
+  const natural = tw.scrollHeight + (tw.offsetHeight - tw.clientHeight);
+  tw.style.height = Math.min(h, natural) + 'px';
+  tw.style.maxHeight = 'none';
 }
 window.addEventListener('scroll', () => {
   const y = window.scrollY, dy = y - lastY;
