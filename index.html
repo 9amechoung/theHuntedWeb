@@ -404,7 +404,10 @@ button.trow:hover{background:var(--slate-soft)}
 .rep-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
 .rep-h h3{font-size:17px;font-weight:500;flex:1 1 240px;min-width:0;overflow-wrap:anywhere}
 .rep-m{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:12.5px;color:var(--ink-2)}
-.rep-m .by{font-weight:500;color:var(--ink)}
+.rep-m .by{font-weight:500;color:var(--ink);border:0;background:none;padding:0;cursor:pointer;text-decoration:underline dotted var(--ink-3);text-underline-offset:3px}
+.rep-m .by:hover{text-decoration-style:solid}
+.rep.flash{animation:repflash 1.6s ease-out}
+@keyframes repflash{0%,40%{box-shadow:0 0 0 4px var(--amber)}100%{box-shadow:0 0 0 0 transparent}}
 .rep .body{white-space:pre-wrap;overflow-wrap:anywhere;max-width:72ch}
 .imgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .imgs button{padding:0;border:1.5px solid var(--ink);background:var(--slate-soft);aspect-ratio:4/3;max-width:100%;overflow:hidden}
@@ -1502,7 +1505,7 @@ V.reports = () => {
       <div class="dayh">${d ? `<b>${pad(d.getMonth()+1)}.${pad(d.getDate())}</b><span>${d.getFullYear()} · ${DOWL[d.getDay()]}</span>` : '<b>날짜 없음</b>'}</div>
       <div class="reps">${g.items.map(r => `<article class="rep" id="rep-${esc(r.id)}">
         <div class="rep-h"><h3>${esc(r.title)}</h3>${canWrite ? `<button type="button" class="linkbtn" data-act="edit-report" data-id="${esc(r.id)}">편집</button>` : ''}</div>
-        <div class="rep-m">${r.member ? `<span class="by">${esc(r.member)}</span>` : ''}${tchip(r.team)}${pchip(proj(r.projectId))}</div>
+        <div class="rep-m">${r.member ? `<button type="button" class="by" data-act="rep-who" data-id="${esc(r.id)}" title="${f.who === r.member ? '누르면 모든 팀원 보기' : `${esc(r.member)} 보고만 보기`}">${esc(r.member)}</button>` : ''}${tchip(r.team)}${pchip(proj(r.projectId))}</div>
         ${r.body ? `<div class="body">${esc(r.body)}</div>` : ''}
         ${(r.images || []).length ? `<div class="imgs">${r.images.map((id, i) => `<button type="button" data-act="view-img" data-src="${esc(id)}" data-cap="${esc(r.title)} (${i + 1}/${r.images.length})"><img ${blobAttr(id)} alt="${esc(r.title)} 스크린샷 ${i + 1}"></button>`).join('')}</div>` : ''}
       </article>`).join('')}</div></section>`; }).join('') : `<div class="panel">${emptyMsg('reports', f.who || f.project || f.team ? '조건에 맞는 보고가 없어요.' : '아직 작업 보고가 없어요. <b>+ 보고 쓰기</b>로 그날 만든 것을 스크린샷과 함께 남겨 주세요.')}</div>`}`;
@@ -2142,6 +2145,17 @@ main.addEventListener('click', e => {
     case 'tl-busy': S.tl.busy = !S.tl.busy; return render();
     case 'kb-set': S.kb[el.dataset.key] = el.dataset.val; return render();
     case 'rep-set': S.rep[el.dataset.key] = el.dataset.val; return render();
+    case 'rep-who': {
+      // 작성자 이름을 누르면 그 사람 보고만 걸러서 누른 보고 자리로 (다시 누르면 모든 팀원)
+      const r = byId('reports', id);
+      if (!r) return;
+      const on = S.rep.who !== r.member;
+      S.rep.who = on ? r.member : '';
+      render();
+      const card = document.getElementById('rep-' + id);
+      if (card) { card.scrollIntoView({block: 'center'}); if (on) { card.classList.add('flash'); setTimeout(() => card.classList.remove('flash'), 1600); } }
+      return;
+    }
     case 'tl-today': S.tl.anchor = today(); return render();
     case 'tl-team': S.tl.team = el.dataset.team; return render();
     case 'cal-team': S.cal.team = el.dataset.team; store.set('calTeam', S.cal.team); return render();
