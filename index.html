@@ -2075,7 +2075,19 @@ lb.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (!lb.hidden) lb.hidden = true; else if (!modal.hidden) closeModal();
+  if (!lb.hidden) lb.hidden = true; else if (!modal.hidden) closeModal(); else clearTlPick();
+});
+/* 타임라인 날짜(주) 고른 것 풀기: Esc, 또는 날짜 · 막대 · 타임라인 버튼이 아닌 곳을 누르면 (일정순 · 사람별 셋 다) */
+function clearTlPick(){
+  if (S.view !== 'timeline' || !S.tl.pick) return;
+  S.tl.pick = '';
+  render();
+}
+document.addEventListener('click', e => {
+  if (S.view !== 'timeline' || !S.tl.pick || !modal.hidden || !lb.hidden) return;
+  const t = e.target;
+  if (t.closest('[data-act^="tl-"], .tb, #modal, #lightbox, #toast')) return;
+  clearTlPick();
 });
 
 /* ---------- 토스트 ---------- */
