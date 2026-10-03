@@ -269,7 +269,11 @@ button.trow:hover{background:var(--slate-soft)}
 .pv-r3{height:34px;border-bottom:0}
 .pv-g{position:absolute;top:0;bottom:0;padding:3px 6px;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:1px solid var(--rule)}
 .pv-g:first-child{border-left:0}
-.pv-c{position:absolute;top:0;height:34px;width:var(--w);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15}
+.pv-c{position:absolute;top:0;height:34px;width:var(--w);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;border:0;background:none;padding:0;cursor:pointer}
+.pv-c:hover{background:var(--slate-soft)}
+.pv-c.on{background:var(--amber-soft);box-shadow:inset 0 -3px 0 var(--amber)}
+.pv-row.miss .pv-n{opacity:.45}
+@media (max-width:560px){.pk-names{display:none}}
 .pv-c small{font-size:10px;color:var(--ink-3)}
 .pv-c span{font-family:var(--f-mono);font-size:12px}
 .pv-c.sun span,.pv-c.sun small{color:var(--red)}
@@ -1264,6 +1268,10 @@ function personView(){
     const lo = addDays(start, byDay ? i : i * 7);
     return {lo: iso(lo), hi: iso(byDay ? lo : addDays(lo, 6)), d: lo};
   });
+  // 위쪽 날짜(주 단위는 주)를 누르면 그때 걸친 일만 진하게: 일정순과 같은 S.tl.pick을 씀
+  const pk = isDate(f.pick) ? (byDay ? {lo: f.pick, hi: f.pick} : {lo: iso(sunday(parse(f.pick))), hi: iso(addDays(sunday(parse(f.pick)), 6))}) : null;
+  const hitO = o => !!pk && o.sp.lo <= pk.hi && o.sp.hi >= pk.lo;
+  const pickBtn = (c, cls, title, inner) => { const on = !!pk && c.lo === pk.lo; return `<button type="button" class="pv-c ${cls} ${on ? 'on' : ''}" style="left:${cols.indexOf(c) * W}px" data-act="tl-pick" data-date="${c.lo}" aria-pressed="${on}" title="${title} ${on ? '· 표시 끄기' : '· 걸친 일 보기'}">${inner}</button>`; };
   const s0 = cols[0].lo, s1 = cols[N - 1].hi;
   const colOf = ds => cols.findIndex(c => c.hi >= ds);
   // 위쪽 머리글 세 줄: [월 · 차수] [주차] [날 · 주 번호]
@@ -1278,21 +1286,22 @@ function personView(){
   if (byDay) {
     row1 = groups(c => c.d.getFullYear() * 12 + c.d.getMonth(), c => `${c.d.getFullYear()}년 ${c.d.getMonth() + 1}월`);
     row2 = groups(c => iso(sunday(c.d)), c => { const w = weekNo(c.d); return `${w.m}월 ${w.n}주차`; });
-    cols.forEach((c, i) => { const wd = c.d.getDay(); row3 += `<span class="pv-c ${wd === 0 ? 'sun' : wd === 6 ? 'sat' : ''} ${c.lo === t ? 'td' : ''}" style="left:${i * W}px"><small>${DOW[wd]}</small><span>${c.d.getDate()}</span></span>`; });
+    cols.forEach((c, i) => { const wd = c.d.getDay(); row3 += pickBtn(c, `${wd === 0 ? 'sun' : wd === 6 ? 'sat' : ''} ${c.lo === t ? 'td' : ''}`, md(c.lo), `<small>${DOW[wd]}</small><span>${c.d.getDate()}</span>`); });
   } else if (ph.length) {
     row1 = groups(c => { const p = phaseOf(c); return p ? p.n : 'after'; }, c => { const p = phaseOf(c); return p ? `${p.n}차 · ~${short(p.hi)}` : '이후'; });
     row2 = groups(c => c.d.getFullYear() * 12 + weekNo(c.d).m, c => `${weekNo(c.d).m}월`);
-    cols.forEach((c, i) => { const p = phaseOf(c); const n = p && p.lo ? Math.floor(diff(p.lo, c.lo) / 7) + 1 : ''; row3 += `<span class="pv-c wk ${c.lo <= t && c.hi >= t ? 'td' : ''}" style="left:${i * W}px" title="${short(c.lo)} – ${short(c.hi)}"><small>${short(c.lo)}~</small><span>${n ? n + '주' : '–'}</span></span>`; });
+    cols.forEach((c, i) => { const p = phaseOf(c); const n = p && p.lo ? Math.floor(diff(p.lo, c.lo) / 7) + 1 : ''; row3 += pickBtn(c, `wk ${c.lo <= t && c.hi >= t ? 'td' : ''}`, `${short(c.lo)} – ${short(c.hi)}`, `<small>${short(c.lo)}~</small><span>${n ? n + '주' : '–'}</span>`); });
   } else {
     row1 = groups(c => c.d.getFullYear() * 12 + weekNo(c.d).m, c => `${weekNo(c.d).m}월`);
     row2 = '';
-    cols.forEach((c, i) => row3 += `<span class="pv-c wk ${c.lo <= t && c.hi >= t ? 'td' : ''}" style="left:${i * W}px" title="${short(c.lo)} – ${short(c.hi)}"><small>${short(c.lo)}~</small><span>${weekNo(c.d).n}주차</span></span>`);
+    cols.forEach((c, i) => row3 += pickBtn(c, `wk ${c.lo <= t && c.hi >= t ? 'td' : ''}`, `${short(c.lo)} – ${short(c.hi)}`, `<small>${short(c.lo)}~</small><span>${weekNo(c.d).n}주차</span>`));
   }
   let bg = '';
   cols.forEach((c, i) => {
     if (byDay && (c.d.getDay() === 0 || c.d.getDay() === 6)) bg += `<i class="we" style="left:${i * W}px"></i>`;
     if (i && (!byDay || c.d.getDay() === 0)) bg += `<i class="wk" style="left:${i * W}px"></i>`;
     if (!byDay && ph.length && i && phaseOf(c) !== phaseOf(cols[i - 1])) bg += `<i class="phx" style="left:${i * W}px"></i>`;
+    if (pk && c.lo === pk.lo) bg += `<i class="pick" style="left:${i * W}px"></i>`;
   });
   const ti = colOf(t);
   if (t >= s0 && t <= s1) bg += `<i class="now" style="left:${ti * W}px"></i>`;
@@ -1306,7 +1315,8 @@ function personView(){
   const pteam = f.team && TEAMS.includes(f.team) ? f.team : '';
   const rows = people.filter(p => !pteam || p.team === pteam).map(p => ({...p, items: tasks.filter(o => o.who.includes(p.name))}));
   rows.push({name: '', team: '', items: tasks.filter(o => !o.who.length && teamHit(o.x.team, pteam))});
-  let shownRows = 0, busyCnt = 0;
+  let shownRows = 0, busyCnt = 0, pickRows = 0;
+  const pickPeople = [];
   const body = rows.map(r => {
     const inR = r.items.filter(o => o.sp.hi >= s0 && o.sp.lo <= s1).sort((a, b) => a.sp.lo.localeCompare(b.sp.lo) || b.sp.hi.localeCompare(a.sp.hi));
     if (inR.length && r.name) busyCnt++;
@@ -1318,12 +1328,13 @@ function personView(){
       let k = lanes.findIndex(end => end < L);
       if (k < 0) { k = lanes.length; lanes.push(R); } else lanes[k] = R;
       const x = o.x, st = x.status || 'todo';
-      const cls = [st, 'slim', o.sp.lo < s0 ? 'cut-l' : '', o.sp.hi > s1 ? 'cut-r' : ''].join(' ');
+      const cls = [st, 'slim', o.sp.lo < s0 ? 'cut-l' : '', o.sp.hi > s1 ? 'cut-r' : '', pk ? (hitO(o) ? 'hit' : 'dim') : ''].join(' ');
       return `<button type="button" class="tb ${cls}" style="--c:${tkColor(x)};left:${L * W + 2}px;top:${k * LH + 4}px;width:${(R - L + 1) * W - 4}px" data-act="edit-task" data-id="${esc(x.id)}" title="${esc(tkTip(x, o.sp))}">${x.status === 'done' ? '☑ ' : ''}<b>${esc(x.title)}</b></button>`;
     }).join('');
     const h = Math.max(1, lanes.length) * LH + 8;
     const tc = TEAM_C[r.team];
-    return `<div class="pv-row${r.name ? '' : ' none'}" style="height:${h}px">
+    if (pk && inR.some(hitO)) { pickRows++; if (r.name) pickPeople.push(r.name); }
+    return `<div class="pv-row${r.name ? '' : ' none'}${pk && !inR.some(hitO) ? ' miss' : ''}" style="height:${h}px">
       <div class="pv-n">${r.name ? `<b>${esc(r.name)}</b>${tc ? `<i style="background:${tc}" title="${esc(r.team)}"></i>` : ''}` : '<b>담당 없음</b>'}${inR.length ? `<span class="num">${inR.length}</span>` : ''}</div>
       <div class="pv-l">${bars}</div>
     </div>`;
@@ -1345,6 +1356,9 @@ function personView(){
     <button type="button" class="chip" data-act="tl-busy" aria-pressed="${f.busy}">일 있는 사람만</button>
     <span class="sp"></span>
     <span class="muted">이 기간에 일이 잡힌 사람 ${busyCnt}명 · 담당 칸에 이름을 넣은 할 일이 그 사람 줄에 보여요</span>
+  </div>
+  <div class="bar tl-pickline">
+    ${pk ? (() => { const n = tasks.filter(o => hitO(o) && (o.who.length ? o.who.some(w => rows.some(r => r.name === w)) : teamHit(o.x.team, pteam))).length; return `<b>${byDay ? md(pk.lo) : `${short(pk.lo)} – ${short(pk.hi)} 주`}에 걸친 일 ${n}개 · ${pickPeople.length}명</b><span class="muted pk-names">${pickPeople.length ? esc(pickPeople.slice(0, 12).join(', ')) + (pickPeople.length > 12 ? ` 외 ${pickPeople.length - 12}명` : '') : '이때 잡힌 일이 없어요'}</span><button type="button" class="linkbtn" data-act="tl-pick" data-date="${pk.lo}">표시 끄기</button>`; })() : `<span class="muted">위쪽 ${byDay ? '날짜' : '주'}를 누르면 그때 걸친 일만 진하게 보여요</span>`}
   </div>
   ${!byDay && !ph.length ? `<div class="bar"><span class="muted">마일스톤 제목에 <b>1차</b>, <b>2차</b>처럼 차수를 넣으면 그 날짜가 든 주까지를 한 차수로 묶어 보여 줘요. 지금은 월 · 주차로 보여요.</span></div>` : ''}
   </div>
@@ -2159,7 +2173,12 @@ main.addEventListener('click', e => {
     case 'tl-today': S.tl.anchor = today(); return render();
     case 'tl-team': S.tl.team = el.dataset.team; return render();
     case 'cal-team': S.cal.team = el.dataset.team; store.set('calTeam', S.cal.team); return render();
-    case 'tl-pick': S.tl.pick = S.tl.pick === el.dataset.date ? '' : el.dataset.date; return render();
+    case 'tl-pick': {
+      const d = el.dataset.date, cur = S.tl.pick;
+      const same = cur && (S.tl.mode === 'pweek' ? iso(sunday(parse(cur))) === d : cur === d);
+      S.tl.pick = same ? '' : d;
+      return render();
+    }
     case 'tl-done': S.tl.hideDone = !S.tl.hideDone; return render();
   }
 });
