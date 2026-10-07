@@ -131,6 +131,9 @@ select.sel{border:1.5px solid var(--ink);background:var(--panel);padding:5px 8px
 .sheet-f{flex-wrap:wrap}
 .ext-btn{border-color:var(--amber);color:var(--amber)}
 .cancel-btn{border-color:var(--red);color:var(--red)}
+.sheet-lead{padding:14px 16px 0;display:flex;flex-direction:column;gap:8px}
+.sheet-lead p{margin:0}
+.ext-log{margin:0;padding-left:22px;font-size:13px;display:flex;flex-direction:column;gap:3px;color:var(--ink-2)}
 .due{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);white-space:nowrap}
 .due.late{color:var(--red);font-weight:500}
 .pri-high{color:var(--red);font-weight:700}
@@ -1569,9 +1572,10 @@ function fieldHtml(f, v){
   const dl = f.list ? `<datalist id="${id}_dl">${f.list.map(n => `<option value="${esc(n)}">`).join('')}</datalist>` : '';
   return `<label class="fld ${w}">${lab}<input id="${id}" type="${f.type || 'text'}" value="${esc(v)}" placeholder="${esc(f.ph || '')}" ${list} ${f.type === 'number' ? 'step="1"' : ''} autocomplete="off">${dl}</label>`;
 }
-function openForm({title, fields, values = {}, onSave, onDelete, saveLabel = '저장', after, extra, extras = extra ? [extra] : []}){
+function openForm({title, fields, values = {}, onSave, onDelete, saveLabel = '저장', after, extra, extras = extra ? [extra] : [], lead = ''}){
   modal.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle"><form id="mForm" novalidate>
     <div class="sheet-h"><h2 id="mTitle">${esc(title)}</h2><button type="button" class="x" data-close aria-label="닫기">×</button></div>
+    ${lead ? `<div class="sheet-lead">${lead}</div>` : ''}
     <div class="fields">${fields.map(f => fieldHtml(f, values[f.key])).join('')}</div>
     <p class="ferr" id="mErr" hidden></p>
     <div class="sheet-f">${onDelete ? '<button type="button" class="danger" id="mDel">삭제</button>' : ''}${extras.map((x, i) => `<button type="button" class="ghost ${x.cls || 'done-btn'}" data-extra="${i}">${esc(x.label)}</button>`).join('')}<span class="sp"></span><button type="button" class="ghost" data-close>취소</button><button type="submit" class="primary" id="mSave">${esc(saveLabel)}</button></div>
@@ -1703,6 +1707,7 @@ function taskForm(t, preset = {}){
     extras: t && canWrite ? [
       {label: t.status === 'done' ? '완료 취소' : '✓ 완료', run: () => setTaskStatus(t, t.status === 'done' ? 'todo' : 'done')},
       ...(isDate(t.due) && !isOff(t) ? [{label: '연장', cls: 'ext-btn', run: () => { extendForm(t); return 'keep'; }}] : []),
+      ...(extDays(t) ? [{label: '연장 지우기', cls: 'ext-btn', run: () => { unextendForm(t); return 'keep'; }}] : []),
       {label: t.status === 'cancel' ? '파기 취소' : '파기', cls: 'cancel-btn', run: () => setTaskStatus(t, t.status === 'cancel' ? 'todo' : 'cancel')}
     ] : []
   });
@@ -1730,6 +1735,31 @@ function extendForm(t){
       const data = extendData(t, v.due, v.why);
       await save('tasks', t.id, data);
       toast(`"${t.title}" 마감을 ${short(v.due)}까지 연장했어요 (원래보다 +${diff(data.due0, v.due)}일).`);
+    }
+  });
+}
+/* 연장 지우기: 마지막 연장만 되돌리거나, 모두 지워서 원래 마감일로 */
+function unextendForm(t){
+  if (!guard()) return;
+  const log = t.extLog || [], last = log[log.length - 1];
+  const canLast = log.length > 1 && last && last.to === t.due && isDate(last.from) && last.from > t.due0;
+  const rows = log.map(l => `<li><span class="num">${short(l.from)} → <b>${short(l.to)}</b></span>${l.at ? ` · ${short(l.at)}` : ''}${l.by ? ' · ' + esc(l.by) : ''}${l.why ? ' · ' + esc(l.why) : ''}</li>`).join('');
+  openForm({
+    title: `연장 지우기 · ${t.title}`,
+    fields: [],
+    lead: `<p>지금 마감 <b>${short(t.due)}</b> · 원래 마감 <b>${short(t.due0)}</b> · 연장 +${extDays(t)}일${t.extN > 1 ? ` (${t.extN}번)` : ''}</p>
+      ${rows ? `<ol class="ext-log">${rows}</ol>` : ''}
+      <p class="muted">모두 지우면 마감일이 원래 ${short(t.due0)}(으)로 돌아가고 연장 기록이 사라져요.${canLast ? ` 마지막 연장만 되돌리면 ${short(last.from)}(으)로 돌아가요.` : ''}</p>`,
+    saveLabel: '연장 모두 지우기',
+    extras: canLast ? [{label: `마지막 연장만 되돌리기`, cls: 'ext-btn', run: async () => {
+      if (!guard()) throw new Error('수정 권한이 없어요.');
+      await save('tasks', t.id, {due: last.from, extN: Math.max(1, (t.extN || 1) - 1), extLog: log.slice(0, -1)});
+      toast(`"${t.title}" 마지막 연장을 되돌렸어요. 마감 ${short(last.from)}.`);
+    }}] : [],
+    onSave: async () => {
+      if (!guard()) throw new Error('수정 권한이 없어요.');
+      await save('tasks', t.id, {due: t.due0, due0: '', extN: 0, extLog: []});
+      toast(`"${t.title}" 연장을 지웠어요. 마감 ${short(t.due0)}(으)로 돌아갔어요.`);
     }
   });
 }
