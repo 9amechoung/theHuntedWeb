@@ -118,6 +118,19 @@ select.sel{border:1.5px solid var(--ink);background:var(--panel);padding:5px 8px
 .st{font-size:11.5px;padding:0 6px;border:1.5px solid var(--ink-3);color:var(--ink-2);white-space:nowrap;letter-spacing:.02em}
 .st.doing{border-color:var(--blue);background:var(--blue-soft);color:var(--blue)}
 .st.done{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+.st.cancel{border-color:var(--red);background:var(--red-soft);color:var(--red)}
+.ext{font-size:11px;padding:0 5px;margin-left:4px;border:1.5px dashed var(--amber);background:var(--amber-soft);color:var(--amber);white-space:nowrap;font-weight:500}
+.trow.cancel .tt,.card.cancel .ct,.it.cancel{color:var(--ink-3)}
+.card.cancel{border-style:dashed;opacity:.75}
+.card.cancel .ct{text-decoration:line-through}
+.tb.cancel{border-style:dashed;background:var(--panel);opacity:.55}
+.tb.cancel b{text-decoration:line-through}
+.tb b,.tb small{position:relative}
+.tb-ext{position:absolute;top:0;bottom:0;right:0;border-left:1.5px dashed var(--amber);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--amber) 40%,transparent) 0 3px,transparent 3px 7px);pointer-events:none}
+.tb.slim .tb-x{margin-left:auto;padding-left:4px;font-size:10.5px;color:var(--amber);font-weight:700;flex:0 0 auto}
+.sheet-f{flex-wrap:wrap}
+.ext-btn{border-color:var(--amber);color:var(--amber)}
+.cancel-btn{border-color:var(--red);color:var(--red)}
 .due{font-family:var(--f-mono);font-size:12px;color:var(--ink-2);white-space:nowrap}
 .due.late{color:var(--red);font-weight:500}
 .pri-high{color:var(--red);font-weight:700}
@@ -206,7 +219,7 @@ button.trow:hover{background:var(--slate-soft)}
 .legend span::before{content:"";display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:-1px;background:var(--k)}
 
 /* 칸반 */
-.kb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.kb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,.7fr);gap:16px;align-items:start}
 .kcol{background:var(--panel);border:var(--frame);min-width:0;display:flex;flex-direction:column}
 .kcol .ph{position:relative}
 .kcol.over{background-image:radial-gradient(circle,color-mix(in srgb,var(--blue) 45%,transparent) 1px,transparent 1.3px);background-size:6px 6px}
@@ -295,6 +308,8 @@ button.trow:hover{background:var(--slate-soft)}
 .glegend i{display:inline-block;width:22px;height:11px;vertical-align:-1px;margin-right:5px;border:1.5px solid var(--slate)}
 .glegend .l-todo{background:color-mix(in srgb,var(--slate) 24%,var(--panel))}
 .glegend .l-doing{background:color-mix(in srgb,var(--slate) 45%,var(--panel))}
+.glegend .l-ext{border-color:var(--amber);border-style:dashed;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--amber) 40%,transparent) 0 3px,var(--panel) 3px 7px)}
+.glegend .l-cancel{border-style:dashed;opacity:.55}
 .glegend .l-done{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--slate) 30%,var(--panel)) 0 4px,var(--panel) 4px 8px)}
 .glegend .l-ev{border-style:dashed;background:color-mix(in srgb,var(--slate) 24%,var(--panel))}
 
@@ -608,7 +623,12 @@ const store = {
   set(k, v){ try { localStorage.setItem('hunted.' + k, v); } catch {} }
 };
 
-const STATUS = {todo:'할 일', doing:'진행 중', done:'완료'};
+const STATUS = {todo:'할 일', doing:'진행 중', done:'완료', cancel:'파기'};
+// 끝난 일 = 완료 또는 파기 (파기는 지우지 않고 남겨 두는 취소 상태). 마감 지남 · 남은 일 · 진행률에서 빠짐
+const isOff = t => t.status === 'done' || t.status === 'cancel';
+// 연장: 처음 마감일(due0)보다 지금 마감일이 며칠 뒤인지
+const extDays = t => isDate(t.due0) && isDate(t.due) && t.due > t.due0 ? diff(t.due0, t.due) : 0;
+const extTag = t => extDays(t) ? `<span class="ext" title="원래 마감 ${short(t.due0)} → ${short(t.due)}${t.extN > 1 ? ` · ${t.extN}번 연장` : ''}">연장 +${extDays(t)}일</span>` : '';
 const PRI = {high:'높음', mid:'보통', low:'낮음'};
 /* 일정 · 할 일 종류: settings/kinds 문서의 list (관리자만 편집). 없으면 기본 5종 */
 const KIND_DEFAULT = [
@@ -691,8 +711,8 @@ const pchip = p => p ? `<span class="pchip" style="--c:${esc(p.color || PALETTE[
 const stPill = s => `<span class="st ${esc(s)}">${esc(STATUS[s] || s)}</span>`;
 const dueTag = t => {
   if (!t.due) return '';
-  const late = t.status !== 'done' && t.due < today();
-  return `<span class="due ${late ? 'late' : ''}">${late ? '지남 ' : ''}${short(t.due)}</span>`;
+  const late = !isOff(t) && t.due < today();
+  return `<span class="due ${late ? 'late' : ''}">${late ? '지남 ' : ''}${short(t.due)}</span>${extTag(t)}`;
 };
 const memberNames = () => {
   const set = new Set(S.team.map(m => m.name).filter(Boolean));
@@ -726,8 +746,8 @@ async function save(col, id, data){
 // 할 일 상태는 여기서만 바꿈 → 칸반 · 캘린더 · 타임라인 · 할 일 목록이 같은 값을 봄
 async function setTaskStatus(t, st){
   if (!guard()) throw new Error('수정 권한이 없어요.');
-  await save('tasks', t.id, {status: st, doneAt: st === 'done' ? today() : ''});
-  toast(st === 'done' ? `"${t.title}" 완료! 칸반 · 캘린더 · 타임라인에 반영했어요.` : `"${t.title}"을(를) ${STATUS[st]}(으)로 옮겼어요.`);
+  await save('tasks', t.id, {status: st, doneAt: st === 'done' ? today() : '', cancelAt: st === 'cancel' ? today() : ''});
+  toast(st === 'done' ? `"${t.title}" 완료! 칸반 · 캘린더 · 타임라인에 반영했어요.` : st === 'cancel' ? `"${t.title}"을(를) 파기했어요. 지우지 않고 남겨 둬요.` : `"${t.title}"을(를) ${STATUS[st]}(으)로 옮겼어요.`);
 }
 async function remove(col, id){
   try { await db.doc(`${col}/${id}`).delete(); } catch (e) { throw new Error(dbErr(e)); }
@@ -972,7 +992,7 @@ function crewPanel(){
 V.overview = () => {
   const t = today(), d = parse(t);
   const in7 = iso(addDays(d, 7)), in14 = iso(addDays(d, 14));
-  const open = S.d.tasks.filter(x => x.status !== 'done');
+  const open = S.d.tasks.filter(x => !isOff(x));
   const late = open.filter(x => x.due && x.due < t).sort((a,b) => a.due.localeCompare(b.due));
   const soon = open.filter(x => x.due && x.due >= t && x.due <= in7).sort((a,b) => a.due.localeCompare(b.due));
   const doing = open.filter(x => x.status === 'doing');
@@ -984,7 +1004,7 @@ V.overview = () => {
   const trow = x => `<button type="button" class="trow" data-act="edit-task" data-id="${esc(x.id)}">${stPill(x.status)}<span class="tt">${esc(x.title)}</span>${pchip(proj(x.projectId))}${dueTag(x)}</button>`;
   const dueList = [...late, ...soon];
   const groups = [...projsSorted()].map(p => {
-    const ts = S.d.tasks.filter(x => x.projectId === p.id);
+    const ts = S.d.tasks.filter(x => x.projectId === p.id && x.status !== 'cancel');
     const done = ts.filter(x => x.status === 'done').length;
     const pct = ts.length ? Math.round(done / ts.length * 100) : 0;
     return `<div class="prog">${pchip(p)}<span class="num muted">${done}/${ts.length} · ${pct}%</span><div class="meter" role="img" aria-label="${esc(p.name)} ${pct}% 완료"><i style="--c:${esc(p.color)};width:${pct}%"></i></div></div>`;
@@ -1019,7 +1039,7 @@ function monthDue(month){
   const m = Number(month.slice(5, 7)), t = today();
   const inM = d => isDate(d) && d.slice(0, 7) === month;
   const rows = [], cal = calData();
-  cal.tasks.forEach(x => { if (inM(x.due)) rows.push({d: x.due, kind: stPill(x.status || 'todo'), title: x.title, act: 'edit-task', id: x.id, done: x.status === 'done', p: proj(x.projectId), team: x.team, by: x.by, sub: isDate(x.start) && x.start !== x.due ? `${short(x.start)}부터` : ''}); });
+  cal.tasks.forEach(x => { if (inM(x.due)) rows.push({d: x.due, kind: stPill(x.status || 'todo'), title: x.title, act: 'edit-task', id: x.id, done: isOff(x), p: proj(x.projectId), team: x.team, by: x.by, sub: isDate(x.start) && x.start !== x.due ? `${short(x.start)}부터` : ''}); });
   cal.events.forEach(e => {
     if (!isDate(e.date)) return;
     const end = isDate(e.end) && e.end > e.date ? e.end : e.date;
@@ -1065,10 +1085,10 @@ const taskSpan = t => {
   const lo = a < b ? a : b, hi = a < b ? b : a;
   return {lo, hi: iso(addDays(parse(lo), Math.min(diff(lo, hi), 90)))};
 };
-const tkMark = t => `<span class="ck" aria-hidden="true">${t.status === 'done' ? '☑' : '☐'}</span>`;
-const tkCls = t => `tk ${t.status === 'done' ? 'fin' : t.status === 'doing' ? 'doing' : ''}`;
+const tkMark = t => `<span class="ck" aria-hidden="true">${t.status === 'done' ? '☑' : t.status === 'cancel' ? '✕' : '☐'}</span>`;
+const tkCls = t => `tk ${t.status === 'done' ? 'fin' : t.status === 'cancel' ? 'fin cancel' : t.status === 'doing' ? 'doing' : ''}`;
 const tkColor = t => { if (t.kind && KIND_C[t.kind]) return KIND_C[t.kind]; const p = proj(t.projectId); return esc(p ? p.color : 'var(--slate)'); };
-const tkTip = (t, sp) => `${STATUS[t.status || 'todo']} · ${t.title} · ${range(sp.lo, sp.hi)}${t.assignee ? ' · 담당 ' + t.assignee : ''}`;
+const tkTip = (t, sp) => `${STATUS[t.status || 'todo']} · ${t.title} · ${range(sp.lo, sp.hi)}${extDays(t) ? ` · 연장 +${extDays(t)}일 (원래 ${short(t.due0)})` : ''}${t.assignee ? ' · 담당 ' + t.assignee : ''}`;
 // 캘린더 팀 필터 (공통은 어느 팀을 골라도 보임)
 const calData = () => {
   const hit = x => teamHit(x.team, S.cal.team);
@@ -1096,7 +1116,7 @@ function calItems(skipMulti){
     if (skipMulti && span) return;
     for (let i = 0; i <= span; i++) {
       const lab = i === 0 ? `${tkMark(t)}${esc(t.title)}${span ? ` <span class="tm">~${short(sp.hi)}</span>` : ''}` : `↳ ${esc(t.title)}`;
-      put(iso(addDays(parse(sp.lo), i)), {html: `<button type="button" class="it ${tkCls(t)}" style="--k:${tkColor(t)}" data-act="edit-task" data-id="${esc(t.id)}" title="${esc(tkTip(t, sp))}">${lab}</button>`, sort: (span ? '0' : '2') + (t.status === 'done' ? '1' : '0')});
+      put(iso(addDays(parse(sp.lo), i)), {html: `<button type="button" class="it ${tkCls(t)}" style="--k:${tkColor(t)}" data-act="edit-task" data-id="${esc(t.id)}" title="${esc(tkTip(t, sp))}">${lab}</button>`, sort: (span ? '0' : '2') + (isOff(t) ? '1' : '0')});
     }
   });
   Object.values(map).forEach(a => a.sort((x, y) => x.sort.localeCompare(y.sort)));
@@ -1229,7 +1249,7 @@ V.kanban = () => {
       ${REP_TEAMS.map(t => `<button type="button" class="chip dot" style="--c:${TEAM_C[t]}" data-act="kb-set" data-key="team" data-val="${t}" aria-pressed="${f.team === t}">${t}</button>`).join('')}
     </div>
   </div>
-  <div class="kb">${col('todo')}${col('doing')}${col('done')}</div>
+  <div class="kb">${col('todo')}${col('doing')}${col('done')}${col('cancel')}</div>
   ${selBar(ts.map(t => 'tasks:' + t.id))}`;
 };
 
@@ -1310,7 +1330,7 @@ function personView(){
   const addP = (name, team) => { if (!name || seen.has(name)) return; seen.add(name); people.push({name, team}); };
   TEAMS.forEach(tm => S.team.filter(m => m.team === tm).forEach(m => addP(m.name, tm)));
   S.team.forEach(m => addP(m.name, TEAMS.includes(m.team) ? m.team : ''));
-  const tasks = S.d.tasks.filter(x => !(f.hideDone && x.status === 'done')).map(x => ({x, sp: taskSpan(x), who: splitNames(x.assignee)})).filter(o => o.sp);
+  const tasks = S.d.tasks.filter(x => !(f.hideDone && (x.status === 'done' || x.status === 'cancel'))).map(x => ({x, sp: taskSpan(x), who: splitNames(x.assignee)})).filter(o => o.sp);
   tasks.forEach(o => o.who.forEach(n => addP(n, rosterTeam(n))));
   const pteam = f.team && TEAMS.includes(f.team) ? f.team : '';
   const rows = people.filter(p => !pteam || p.team === pteam).map(p => ({...p, items: tasks.filter(o => o.who.includes(p.name))}));
@@ -1328,8 +1348,13 @@ function personView(){
       let k = lanes.findIndex(end => end < L);
       if (k < 0) { k = lanes.length; lanes.push(R); } else lanes[k] = R;
       const x = o.x, st = x.status || 'todo';
+      let extI = '';
+      if (extDays(x)) {   // 연장된 부분은 빗금
+        const e0 = iso(addDays(parse(x.due0), 1)), E = e0 < s0 ? 0 : e0 > s1 ? N : Math.max(L, colOf(e0));
+        if (E <= R) extI = `<i class="tb-ext" style="width:${(R - E + 1) * W}px"></i>`;
+      }
       const cls = [st, 'slim', o.sp.lo < s0 ? 'cut-l' : '', o.sp.hi > s1 ? 'cut-r' : '', pk ? (hitO(o) ? 'hit' : 'dim') : ''].join(' ');
-      return `<button type="button" class="tb ${cls}" style="--c:${tkColor(x)};left:${L * W + 2}px;top:${k * LH + 4}px;width:${(R - L + 1) * W - 4}px" data-act="edit-task" data-id="${esc(x.id)}" title="${esc(tkTip(x, o.sp))}">${x.status === 'done' ? '☑ ' : ''}<b>${esc(x.title)}</b></button>`;
+      return `<button type="button" class="tb ${cls}" style="--c:${tkColor(x)};left:${L * W + 2}px;top:${k * LH + 4}px;width:${(R - L + 1) * W - 4}px" data-act="edit-task" data-id="${esc(x.id)}" title="${esc(tkTip(x, o.sp))}">${extI}${x.status === 'done' ? '☑ ' : x.status === 'cancel' ? '✕ ' : ''}<b>${esc(x.title)}</b>${extDays(x) ? `<small class="tb-x">+${extDays(x)}일</small>` : ''}</button>`;
     }).join('');
     const h = Math.max(1, lanes.length) * LH + 8;
     const tc = TEAM_C[r.team];
@@ -1352,7 +1377,7 @@ function personView(){
   </div>
   <div class="bar">
     <div class="chips" role="group" aria-label="팀"><button type="button" class="chip" data-act="tl-team" data-team="" aria-pressed="${!pteam}">전체</button>${TEAMS.map(tm => `<button type="button" class="chip" data-act="tl-team" data-team="${tm}" aria-pressed="${pteam === tm}">${tm}</button>`).join('')}</div>
-    <button type="button" class="chip" data-act="tl-done" aria-pressed="${f.hideDone}">완료 숨기기</button>
+    <button type="button" class="chip" data-act="tl-done" aria-pressed="${f.hideDone}">완료 · 파기 숨기기</button>
     <button type="button" class="chip" data-act="tl-busy" aria-pressed="${f.busy}">일 있는 사람만</button>
     <span class="sp"></span>
     <span class="muted">이 기간에 일이 잡힌 사람 ${busyCnt}명 · 담당 칸에 이름을 넣은 할 일이 그 사람 줄에 보여요</span>
@@ -1395,21 +1420,25 @@ V.timeline = () => {
     if (!isDate(x.start) && !isDate(x.due)) return;
     const a = isDate(x.start) ? x.start : x.due, b = isDate(x.due) ? x.due : x.start;
     const p = proj(x.projectId);
-    items.push({act:'edit-task', id:x.id, title:x.title, lo: a < b ? a : b, hi: a < b ? b : a, team:x.team, by:x.by, status:x.status || 'todo', c: TEAM_C[x.team] || (p ? p.color : 'var(--slate)')});
+    items.push({act:'edit-task', id:x.id, title:x.title, lo: a < b ? a : b, hi: a < b ? b : a, team:x.team, by:x.by, status:x.status || 'todo', ext: extDays(x) ? x.due0 : '', extN: extDays(x), c: TEAM_C[x.team] || (p ? p.color : 'var(--slate)')});
   });
   S.d.events.forEach(e => {
     if (!isDate(e.date)) return;
     const end = isDate(e.end) && e.end > e.date ? e.end : e.date;
     items.push({act:'edit-event', id:e.id, title:e.title, lo:e.date, hi:end, team:e.team, by:e.by, status:'ev', c: TEAM_C[e.team] || 'var(--slate)'});
   });
-  const shown = items.filter(x => teamHit(x.team, f.team) && !(f.hideDone && x.status === 'done'));
+  const shown = items.filter(x => teamHit(x.team, f.team) && !(f.hideDone && (x.status === 'done' || x.status === 'cancel')));
   const inRange = shown.filter(x => x.hi >= s0 && x.lo <= s1).sort((a, b) => a.lo.localeCompare(b.lo) || a.hi.localeCompare(b.hi));
   const before = shown.filter(x => x.hi < s0).length, after = shown.filter(x => x.lo > s1).length;
   const bars = inRange.map((x, i) => {
     const L = Math.max(0, diff(s0, x.lo)), R = Math.min(DAYS - 1, diff(s0, x.hi));
     const cls = [x.status, x.lo < s0 ? 'cut-l' : '', x.hi > s1 ? 'cut-r' : '', f.pick ? (x.lo <= f.pick && x.hi >= f.pick ? 'hit' : 'dim') : ''].join(' ');
     const who = x.by ? ` · ${x.by}${x.team ? ' ' + x.team : ''}` : (x.team ? ' · ' + x.team : '');
-    return `<button type="button" class="tb ${cls}" style="--c:${esc(x.c)};left:${L * W + 2}px;top:${i * RH + 6}px;width:${(R - L + 1) * W - 4}px" data-act="${x.act}" data-id="${esc(x.id)}" title="${esc(x.title)} · ${range(x.lo, x.hi)}${esc(who)}"><b>${esc(x.title)}</b><small>${range(x.lo, x.hi)}${esc(who)}</small></button>`;
+    // 연장된 부분(원래 마감 다음 날 ~ 지금 마감)은 빗금으로
+    const E = x.ext ? Math.max(L, diff(s0, x.ext) + 1) : Infinity;
+    const extI = E <= R ? `<i class="tb-ext" style="width:${(R - E + 1) * W}px"></i>` : '';
+    const extL = x.extN ? ` · 연장 +${x.extN}일` : '', stL = x.status === 'cancel' ? '파기 · ' : '';
+    return `<button type="button" class="tb ${cls}" style="--c:${esc(x.c)};left:${L * W + 2}px;top:${i * RH + 6}px;width:${(R - L + 1) * W - 4}px" data-act="${x.act}" data-id="${esc(x.id)}" title="${stL}${esc(x.title)} · ${range(x.lo, x.hi)}${extL}${esc(who)}">${extI}<b>${esc(x.title)}</b><small>${stL}${range(x.lo, x.hi)}${extL}${esc(who)}</small></button>`;
   }).join('');
   const undated = S.d.tasks.filter(x => !isDate(x.start) && !isDate(x.due) && teamHit(x.team, f.team));
   const s = parse(s0), e = parse(s1);
@@ -1425,9 +1454,9 @@ V.timeline = () => {
   </div>
   <div class="bar">
     <div class="chips" role="group" aria-label="팀"><button type="button" class="chip" data-act="tl-team" data-team="" aria-pressed="${!f.team}">전체</button>${REP_TEAMS.map(tm => `<button type="button" class="chip" data-act="tl-team" data-team="${tm}" aria-pressed="${f.team === tm}">${tm}</button>`).join('')}</div>
-    <button type="button" class="chip" data-act="tl-done" aria-pressed="${f.hideDone}">완료 숨기기</button>
+    <button type="button" class="chip" data-act="tl-done" aria-pressed="${f.hideDone}">완료 · 파기 숨기기</button>
     <span class="sp"></span>
-    <div class="glegend">${REP_TEAMS.map(tm => `<span><i style="border-color:${TEAM_C[tm]};background:color-mix(in srgb,${TEAM_C[tm]} 24%,var(--panel))"></i>${tm}</span>`).join('')}<span><i class="l-doing"></i>진행 중</span><span><i class="l-done"></i>완료</span><span><i class="l-ev"></i>일정</span></div>
+    <div class="glegend">${REP_TEAMS.map(tm => `<span><i style="border-color:${TEAM_C[tm]};background:color-mix(in srgb,${TEAM_C[tm]} 24%,var(--panel))"></i>${tm}</span>`).join('')}<span><i class="l-doing"></i>진행 중</span><span><i class="l-done"></i>완료</span><span><i class="l-ext"></i>연장</span><span><i class="l-cancel"></i>파기</span><span><i class="l-ev"></i>일정</span></div>
   </div>
   <div class="bar tl-pickline">
     ${f.pick ? `<b>${md(f.pick)}에 걸친 일 ${shown.filter(x => x.lo <= f.pick && x.hi >= f.pick).length}개</b><span class="muted">진하게 보이는 막대가 그날까지 이어지는 일이에요</span><button type="button" class="linkbtn" data-act="tl-pick" data-date="${f.pick}">표시 끄기</button>` : '<span class="muted">위쪽 날짜를 누르면 그날에 걸친 일만 진하게 보여요</span>'}
@@ -1448,15 +1477,15 @@ V.todo = () => {
   const groups = [...projsSorted().map(p => ({p, id: p.id})), {p: null, id: '_none'}];
   const secs = groups.map(g => {
     const ts = S.d.tasks.filter(x => g.p ? x.projectId === g.id : !proj(x.projectId))
-      .sort((a, b) => (a.status === 'done') - (b.status === 'done') || (a.due || '9999').localeCompare(b.due || '9999') || (a.createdAt||0) - (b.createdAt||0));
+      .sort((a, b) => (a.status === 'cancel') - (b.status === 'cancel') || (a.status === 'done') - (b.status === 'done') || (a.due || '9999').localeCompare(b.due || '9999') || (a.createdAt||0) - (b.createdAt||0));
     if (!g.p && !ts.length) return '';
-    const done = ts.filter(x => x.status === 'done').length;
-    const rows = ts.map(x => `<div class="trow ${x.status === 'done' ? 'done' : ''}${picked('tasks:' + x.id)}"${selAttr('tasks:' + x.id)}>
+    const done = ts.filter(x => x.status === 'done').length, live = ts.filter(x => x.status !== 'cancel').length;
+    const rows = ts.map(x => `<div class="trow ${x.status === 'done' ? 'done' : x.status === 'cancel' ? 'done cancel' : ''}${picked('tasks:' + x.id)}"${selAttr('tasks:' + x.id)}>
         ${selOn() ? '' : `<input type="checkbox" data-toggle="${esc(x.id)}" ${x.status === 'done' ? 'checked' : ''} ${canWrite ? '' : 'disabled'} aria-label="${esc(x.title)} 완료">`}
         <button type="button" class="open tt" data-act="edit-task" data-id="${esc(x.id)}" title="${esc(x.title)}${x.by ? ' · 입력 ' + esc(byText(x)) : ''}">${x.priority === 'high' ? '<span class="pri-high">! </span>' : ''}${esc(x.title)}</button>
-        ${x.status === 'doing' ? stPill('doing') : ''}${x.assignee ? `<span class="who-s">${esc(x.assignee)}</span>` : ''}${dueTag(x)}</div>`).join('');
+        ${x.status === 'doing' || x.status === 'cancel' ? stPill(x.status) : ''}${x.assignee ? `<span class="who-s">${esc(x.assignee)}</span>` : ''}${dueTag(x)}</div>`).join('');
     return `<section class="panel">
-      <div class="ph">${g.p ? pchip(g.p) : '<h2>프로젝트 없음</h2>'}<span class="cnt">${done}/${ts.length}</span><span class="sp"></span>${g.p && canWrite ? `<button type="button" class="linkbtn" data-act="edit-proj" data-id="${esc(g.id)}">편집</button>` : ''}</div>
+      <div class="ph">${g.p ? pchip(g.p) : '<h2>프로젝트 없음</h2>'}<span class="cnt">${done}/${live}</span><span class="sp"></span>${g.p && canWrite ? `<button type="button" class="linkbtn" data-act="edit-proj" data-id="${esc(g.id)}">편집</button>` : ''}</div>
       <div class="rows">${rows || '<p class="empty">할 일이 없어요.</p>'}</div>
       ${canWrite ? `<form class="qa" data-qa="${esc(g.id)}"><input id="qa-${esc(g.id)}" placeholder="할 일 추가 후 Enter" aria-label="${g.p ? esc(g.p.name) : '프로젝트 없음'}에 할 일 추가" autocomplete="off"><button type="submit">추가</button></form>` : ''}
     </section>`;
@@ -1540,12 +1569,12 @@ function fieldHtml(f, v){
   const dl = f.list ? `<datalist id="${id}_dl">${f.list.map(n => `<option value="${esc(n)}">`).join('')}</datalist>` : '';
   return `<label class="fld ${w}">${lab}<input id="${id}" type="${f.type || 'text'}" value="${esc(v)}" placeholder="${esc(f.ph || '')}" ${list} ${f.type === 'number' ? 'step="1"' : ''} autocomplete="off">${dl}</label>`;
 }
-function openForm({title, fields, values = {}, onSave, onDelete, saveLabel = '저장', after, extra}){
+function openForm({title, fields, values = {}, onSave, onDelete, saveLabel = '저장', after, extra, extras = extra ? [extra] : []}){
   modal.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle"><form id="mForm" novalidate>
     <div class="sheet-h"><h2 id="mTitle">${esc(title)}</h2><button type="button" class="x" data-close aria-label="닫기">×</button></div>
     <div class="fields">${fields.map(f => fieldHtml(f, values[f.key])).join('')}</div>
     <p class="ferr" id="mErr" hidden></p>
-    <div class="sheet-f">${onDelete ? '<button type="button" class="danger" id="mDel">삭제</button>' : ''}${extra ? `<button type="button" class="ghost done-btn" id="mExtra">${esc(extra.label)}</button>` : ''}<span class="sp"></span><button type="button" class="ghost" data-close>취소</button><button type="submit" class="primary" id="mSave">${esc(saveLabel)}</button></div>
+    <div class="sheet-f">${onDelete ? '<button type="button" class="danger" id="mDel">삭제</button>' : ''}${extras.map((x, i) => `<button type="button" class="ghost ${x.cls || 'done-btn'}" data-extra="${i}">${esc(x.label)}</button>`).join('')}<span class="sp"></span><button type="button" class="ghost" data-close>취소</button><button type="submit" class="primary" id="mSave">${esc(saveLabel)}</button></div>
   </form></div>`;
   modal.hidden = false;
   const imgState = {};
@@ -1586,12 +1615,12 @@ function openForm({title, fields, values = {}, onSave, onDelete, saveLabel = '�
   const nameKey = ['by', 'member', 'name'].find(k => fields.some(f => f.key === k));
   const teamSel = fields.some(f => f.key === 'team') ? $('#f_team') : null;
   if (nameKey && teamSel) $('#f_' + nameKey).addEventListener('change', e => { const tm = rosterTeam(e.target.value.trim()); if (tm) teamSel.value = tm; });
-  const ex = $('#mExtra');
-  if (ex) ex.addEventListener('click', async () => {
+  modal.querySelectorAll('[data-extra]').forEach(ex => ex.addEventListener('click', async () => {
     ex.disabled = true;
-    try { await extra.run(); closeModal(); }
+    // run()이 'keep'을 돌려주면 창을 닫지 않음 (다른 창으로 바꿔 열 때)
+    try { if (await extras[+ex.dataset.extra].run() !== 'keep') closeModal(); }
     catch (x) { showErr(x.message || '저장하지 못했어요.'); ex.disabled = false; }
-  });
+  }));
   const del = $('#mDel');
   if (del) del.addEventListener('click', async () => {
     if (!del.classList.contains('armed')) { del.classList.add('armed'); del.textContent = '한 번 더 누르면 삭제'; return; }
@@ -1650,7 +1679,7 @@ function taskForm(t, preset = {}){
       {key:'priority', label:'우선순위', type:'select', options: Object.entries(PRI)},
       {key:'assignee', label:'담당', list: memberNames(), ph:'이름', wide:true},
       {key:'start', label:'언제부터 (시작일)', type:'date'},
-      {key:'due', label:'언제까지 (마감일)', type:'date'},
+      {key:'due', label:'언제까지 (마감일)', type:'date', hint: t && extDays(t) ? `원래 ${short(t.due0)} · 연장 +${extDays(t)}일` : ''},
       ...authorFields(),
       {key:'note', label:'메모', type:'textarea'}
     ],
@@ -1661,15 +1690,47 @@ function taskForm(t, preset = {}){
       if (v.start && v.due && v.start > v.due) throw new Error('시작일이 마감일보다 늦어요.');
       const data = {title:v.title, projectId:v.projectId, kind:v.kind, status:v.status, assignee:v.assignee, priority:v.priority, start:v.start, due:v.due, note:v.note, by:v.by, team:v.team};
       if (!t) data.createdAt = Date.now();
-      if (!t || t.status !== v.status) data.doneAt = v.status === 'done' ? today() : '';
+      if (!t || t.status !== v.status) { data.doneAt = v.status === 'done' ? today() : ''; data.cancelAt = v.status === 'cancel' ? today() : ''; }
+      // 마감이 지난 할 일의 마감일을 뒤로 미루면 연장으로 기록. 원래 마감일 이전으로 돌리면 연장 기록을 지움
+      if (t && isDate(t.due) && isDate(v.due) && v.due !== t.due) {
+        if (v.due > t.due && t.due < today() && !isOff(t)) Object.assign(data, extendData(t, v.due, ''));
+        else if (isDate(t.due0) && v.due <= t.due0) Object.assign(data, {due0: '', extN: 0});
+      }
       await save('tasks', t && t.id, data);
       toast(t ? '저장했어요.' : '할 일을 추가했어요.');
     },
     onDelete: t && canWrite ? () => remove('tasks', t.id) : null,
-    extra: t && canWrite ? {
-      label: t.status === 'done' ? '완료 취소' : '✓ 완료',
-      run: () => setTaskStatus(t, t.status === 'done' ? 'todo' : 'done')
-    } : null
+    extras: t && canWrite ? [
+      {label: t.status === 'done' ? '완료 취소' : '✓ 완료', run: () => setTaskStatus(t, t.status === 'done' ? 'todo' : 'done')},
+      ...(isDate(t.due) && !isOff(t) ? [{label: '연장', cls: 'ext-btn', run: () => { extendForm(t); return 'keep'; }}] : []),
+      {label: t.status === 'cancel' ? '파기 취소' : '파기', cls: 'cancel-btn', run: () => setTaskStatus(t, t.status === 'cancel' ? 'todo' : 'cancel')}
+    ] : []
+  });
+}
+/* 연장: 원래 마감일(due0)은 처음 연장할 때 한 번만 남기고, 몇 번 · 언제 · 왜 미뤘는지 기록 */
+function extendData(t, to, why){
+  const log = [...(t.extLog || []), {from: t.due, to, at: today(), by: me ? me.name : '', why}].slice(-20);
+  return {due: to, due0: isDate(t.due0) ? t.due0 : t.due, extN: (t.extN || 0) + 1, extLog: log};
+}
+function extendForm(t){
+  if (!guard()) return;
+  const base = t.due > today() ? t.due : today();
+  const hist = (t.extLog || []).map(l => `${short(l.from)}→${short(l.to)}${l.why ? ' ' + l.why : ''}`).join(', ');
+  openForm({
+    title: `연장 · ${t.title}`,
+    fields: [
+      {key:'due', label:'새 마감일', type:'date', required:true, hint: `지금 마감 ${short(t.due)}${t.due < today() ? ' (지남)' : ''}${extDays(t) ? ` · 원래 ${short(t.due0)}` : ''}`},
+      {key:'why', label:'사유', wide:true, ph:'예: 피드백 반영, 리소스 부족', hint: hist ? `이전 연장: ${hist}` : ''}
+    ],
+    values: {due: iso(addDays(parse(base), 7))},
+    saveLabel: '연장',
+    onSave: async v => {
+      if (!guard()) throw new Error('수정 권한이 없어요.');
+      if (v.due <= t.due) throw new Error(`지금 마감일(${short(t.due)})보다 뒤로 골라 주세요.`);
+      const data = extendData(t, v.due, v.why);
+      await save('tasks', t.id, data);
+      toast(`"${t.title}" 마감을 ${short(v.due)}까지 연장했어요 (원래보다 +${diff(data.due0, v.due)}일).`);
+    }
   });
 }
 /* 일정(발표 · 행사 등)은 관리자만 추가 · 수정 · 삭제. 다른 사람은 내용만 봄 */
