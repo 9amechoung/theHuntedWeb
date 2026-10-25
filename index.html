@@ -415,6 +415,28 @@ button.trow:hover{background:var(--slate-soft)}
 .shot .cap{padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .shot .cap b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .shot .cap span{font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 작업 요청: 시트 한 장 = 카드 하나. 누가 먼저 맡으면 이름 · 마감일이 붙음 */
+.rqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;align-items:start}
+.rq{border:var(--frame);background:var(--panel);display:flex;flex-direction:column;min-width:0}
+.rq.open{box-shadow:4px 4px 0 var(--amber)}
+.rq.off{opacity:.8}
+.rq .im{display:block;width:100%;aspect-ratio:1/1;padding:0;border:0;border-bottom:1.5px solid var(--ink);background:var(--slate-soft);cursor:zoom-in}
+.rq .im img{width:100%;height:100%;object-fit:contain;display:block}
+.rq-b{padding:10px 12px 12px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.rq-h{display:flex;align-items:baseline;gap:8px}
+.rq-h h3{margin:0;font-size:16px;font-weight:700}
+.rq-h .cnt{font-family:var(--f-mono);font-size:12px;color:var(--ink-3)}
+.rq-st{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:13px}
+.st.wait{border-color:var(--amber);background:var(--amber-soft);color:var(--amber)}
+.rq-st b{font-weight:700}
+.rq details{font-size:13px}
+.rq summary{cursor:pointer;color:var(--ink-2)}
+.rq ol{margin:6px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
+.rq ol li{display:flex;gap:6px;min-width:0}
+.rq ol li b{font-family:var(--f-mono);font-weight:500;flex:none}
+.rq .note{font-size:12.5px;color:var(--ink-2);white-space:pre-wrap}
+.rq-f{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.rq-f .primary{flex:1}
 
 /* 작업 보고 */
 .day{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:start}
@@ -656,8 +678,8 @@ const kindPill = id => `<span class="st kst" style="--k:${kindC(id)}">${esc(kind
 const ART_CATS = ['캐릭터','몬스터','배경','건물','무기','오브젝트','UI','레퍼런스'];
 const PALETTE = ['#2f87d0','#cf3b27','#23804f','#c68a14','#7c5cd6','#0f9aa6','#d0457f','#6b7385'];
 const IMG_TYPES = ['image/png','image/jpeg','image/gif','image/webp'];
-const VIEWS = [['overview','개요'],['calendar','캘린더'],['timeline','타임라인'],['kanban','칸반'],['todo','할 일'],['art','아트 바이블'],['reports','작업 보고']];
-const COLS = ['projects','tasks','milestones','events','reports','art','bible','goals'];
+const VIEWS = [['overview','개요'],['calendar','캘린더'],['timeline','타임라인'],['kanban','칸반'],['todo','할 일'],['requests','작업 요청'],['art','아트 바이블'],['reports','작업 보고']];
+const COLS = ['projects','tasks','milestones','events','reports','art','bible','goals','requests'];
 /* 팀 목록은 settings/team 문서의 teams에 저장 (팀원 명단 창에서 편집). 없으면 기본 3팀 */
 const TEAM_DEFAULT = [{name:'아트팀', color:'var(--green)'}, {name:'프밍팀', color:'var(--blue)'}, {name:'기획팀', color:'var(--violet)'}];
 const TEAM_PAL = ['var(--green)','var(--blue)','var(--violet)','var(--amber)','var(--red)','#0f9aa6','#d0457f','#6b7385','#c68a14','#2f87d0'];
@@ -696,6 +718,7 @@ const S = {
   tl: {anchor: today(), team: '', hideDone: false, mode: ['all','pday','pweek'].includes(store.get('tlMode')) ? store.get('tlMode') : 'all', busy: false},
   kb: {project: '', who: '', team: ''},
   art: {cat: ''},
+  rq: {f: ''},
   rep: {who: '', project: '', team: ''}
 };
 let db = null, assets = null, canWrite = false, myId = null;
@@ -1521,6 +1544,49 @@ V.art = () => {
   ${selBar([...secs.map(s => 'bible:' + s.id), ...imgs.map(x => 'art:' + x.id)])}`;
 };
 
+/* 작업 요청: 시트 하나를 한 사람이 먼저 맡고 마감일을 정함. 맡으면 할 일(tasks)이 같이 생겨서 캘린더 · 타임라인에도 뜸 */
+const rqImg = (x, full) => /^images\//.test(x.img || '') ? `src="${esc(x.img)}"` : x.imgId ? blobAttr(x.imgId, full) : `src="${PIXEL}"`;
+const rqItems = x => (Array.isArray(x.items) ? x.items : String(x.items || '').split('\n')).map(s => String(s).trim()).filter(Boolean);
+// 맡은 상태: 연결된 할 일이 파기되거나 지워지면 다시 '맡을 사람 구함'으로 돌아감
+function rqState(x){
+  if (!x.claim || !x.claim.name) return {k: 'open'};
+  const t = x.claim.taskId ? byId('tasks', x.claim.taskId) : null;
+  if (!t && !loading('tasks') && x.claim.taskId) return {k: 'open'};
+  if (t && t.status === 'cancel') return {k: 'open'};
+  return {k: t && t.status === 'done' ? 'done' : 'taken', t, due: (t && t.due) || x.claim.due};
+}
+V.requests = () => {
+  const all = [...S.d.requests].sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || (a.createdAt||0) - (b.createdAt||0));
+  const st = Object.fromEntries(all.map(x => [x.id, rqState(x)]));
+  const n = k => all.filter(x => st[x.id].k === k).length;
+  const f = S.rq.f, list = all.filter(x => !f || st[x.id].k === f);
+  const chip = (v, l, c) => `<button type="button" class="chip" data-act="rq-f" data-val="${v}" aria-pressed="${f === v}">${l}<span class="n">${c}</span></button>`;
+  const card = x => {
+    const s = st[x.id], items = rqItems(x), c = x.claim || {};
+    const left = s.due ? diff(today(), s.due) : null;
+    const stat = s.k === 'open' ? `<span class="st wait">맡을 사람 구함</span>`
+      : `<span class="st ${s.k === 'done' ? 'done' : 'doing'}">${s.k === 'done' ? '완료' : '진행 중'}</span><b>${esc(c.name)}</b>${tchip(c.team)}${s.due ? `<span class="due ${s.k !== 'done' && left < 0 ? 'late' : ''}">~${short(s.due)}${s.k !== 'done' ? (left < 0 ? ` (${-left}일 지남)` : left === 0 ? ' (오늘)' : ` (D-${left})`) : ''}</span>` : ''}${s.t ? extTag(s.t) : ''}`;
+    const btns = s.k === 'open'
+      ? (canWrite ? `<button type="button" class="primary" data-act="rq-claim" data-id="${esc(x.id)}">내가 할게요</button>` : '')
+      : `${s.t ? `<button type="button" class="ghost" data-act="edit-task" data-id="${esc(s.t.id)}">할 일 보기</button>` : ''}${canWrite && s.k !== 'done' ? `<button type="button" class="ghost" data-act="rq-claim" data-id="${esc(x.id)}">마감일 · 담당 바꾸기</button>` : ''}`;
+    return `<article class="rq ${s.k === 'open' ? 'open' : s.k === 'done' ? 'off' : ''}">
+      <button type="button" class="im" data-act="rq-view" data-id="${esc(x.id)}" aria-label="${esc(x.title)} 크게 보기"><img ${rqImg(x)} alt="${esc(x.title)} 컨셉 시트" loading="lazy"></button>
+      <div class="rq-b">
+        <div class="rq-h"><h3>${esc(x.title)}</h3><span class="cnt">${items.length}종${x.code ? ' · ' + esc(x.code) : ''}</span><span class="sp"></span>${canWrite ? `<button type="button" class="linkbtn" data-act="rq-edit" data-id="${esc(x.id)}">편집</button>` : ''}</div>
+        <div class="rq-st">${stat}</div>
+        ${x.note ? `<div class="note">${esc(x.note)}</div>` : ''}
+        ${items.length ? `<details><summary>소품 목록 ${items.length}종</summary><ol>${items.map(s => { const m = /^([A-Z]{1,4}\d{1,3})\s+(.*)$/.exec(s); return `<li>${m ? `<b>${esc(m[1])}</b><span>${esc(m[2])}</span>` : esc(s)}</li>`; }).join('')}</ol></details>` : ''}
+        ${btns ? `<div class="rq-f">${btns}</div>` : ''}
+      </div>
+    </article>`;
+  };
+  return `
+  <div class="bar"><h1 class="vtitle">작업 요청</h1><span class="muted num">${all.length}건 · ${n('open')}건 남음</span><span class="sp"></span>${canWrite && !all.length && !loading('requests') ? `<button type="button" class="ghost" data-act="rq-seed">초원 소품 6장 넣기</button>` : ''}${addBtn('rq-new', '+ 작업 요청')}</div>
+  <p class="muted" style="margin:0">하고 싶은 시트를 먼저 누른 사람이 맡아요. <b>내가 할게요</b>를 누르고 언제까지 할 수 있는지 정하면 할 일 · 캘린더 · 타임라인에 같이 올라가요. 맡은 시트는 이미지 안에 있는 걸 전부 만들어요.</p>
+  ${all.length ? `<div class="chips" role="group" aria-label="상태">${chip('', '전체', all.length)}${chip('open', '맡을 사람 구함', n('open'))}${chip('taken', '진행 중', n('taken'))}${chip('done', '완료', n('done'))}</div>` : ''}
+  ${list.length ? `<div class="rqgrid">${list.map(card).join('')}</div>` : `<div class="panel">${emptyMsg('requests', all.length ? '이 상태인 요청이 없어요.' : '작업 요청이 없어요. <b>+ 작업 요청</b>으로 컨셉 시트와 소품 목록을 올리면 팀원이 골라서 맡을 수 있어요.')}</div>`}`;
+};
+
 V.reports = () => {
   const f = S.rep;
   const list = S.d.reports.filter(r => (!f.who || r.member === f.who) && (!f.project || (f.project === '_none' ? !proj(r.projectId) : r.projectId === f.project)) && teamHit(r.team, f.team))
@@ -1939,6 +2005,100 @@ function artForm(files, x){
   });
 }
 const teamList = () => TEAMS.map(n => ({name: n, color: TEAM_C[n]}));
+/* ---------- 작업 요청 ---------- */
+function reqForm(x){
+  if (!guard()) return;
+  openForm({
+    title: x ? '작업 요청 편집' : '새 작업 요청',
+    fields: [
+      {key:'title', label:'제목', required:true, ph:'예: 나무'},
+      {key:'code', label:'ID 범위', ph:'예: TR01~TR09'},
+      {key:'imgs', label:'컨셉 시트 이미지', type:'images', hint:'한 장'},
+      {key:'items', label:'소품 목록', type:'textarea', ph:'한 줄에 하나 · 예: TR01 묘목'},
+      {key:'note', label:'메모', type:'textarea', ph:'예: 잎뭉치를 만들어 덤불과 공유'},
+      {key:'team', label:'팀', type:'select', options: workTeamOpts()},
+      {key:'order', label:'순서', type:'number', hint:'작을수록 앞'}
+    ],
+    values: x ? {...x, items: rqItems(x).join('\n'), imgs: x.imgId ? [x.imgId] : []} : {team: TEAMS.includes('아트팀') ? '아트팀' : COMMON, order: S.d.requests.length + 1},
+    saveLabel: x ? '저장' : '추가',
+    onSave: async v => {
+      if (!guard()) throw new Error('수정 권한이 없어요.');
+      const ids = await uploadFiles(v.imgs.files.slice(0, 1));
+      const imgId = ids[0] || v.imgs.keep[0] || '';
+      const data = {title: v.title, code: v.code, items: v.items.split('\n').map(s => s.trim()).filter(Boolean), note: v.note, team: v.team, order: v.order === '' ? 99 : +v.order};
+      if (imgId) { data.imgId = imgId; data.img = ''; }
+      else if (x && x.imgId) data.imgId = '';
+      if (!x) Object.assign(data, {createdAt: Date.now(), by: me ? me.name : '', claim: null});
+      await save('requests', x && x.id, data);
+      if (x && x.imgId && x.imgId !== imgId) dropAssets([x.imgId]);
+      toast(x ? '저장했어요.' : '작업 요청을 올렸어요.');
+    },
+    onDelete: x ? async () => { await remove('requests', x.id); if (x.imgId) dropAssets([x.imgId]); } : null
+  });
+}
+// 맡기: 이름 · 언제까지 → 할 일을 만들고 요청에 연결. 이미 맡은 요청이면 마감일 · 담당만 바꿈
+function claimForm(x){
+  if (!guard()) return;
+  const s = rqState(x), mine = s.k !== 'open', c = mine ? x.claim : {};
+  let armed = false;
+  openForm({
+    title: mine ? `${x.title} · 맡은 내용 바꾸기` : `${x.title} 맡기`,
+    lead: mine ? '' : `<p>이 시트의 소품 <b>${rqItems(x).length}종</b>을 전부 만들어요. 언제까지 할 수 있는지 정해 주세요.</p>`,
+    fields: [
+      {key:'name', label:'맡는 사람', list: memberNames(), required:true, ph:'이름'},
+      {key:'team', label:'팀', type:'select', options: teamOpts()},
+      {key:'due', label:'언제까지 할 수 있나요', type:'date', required:true},
+      {key:'projectId', label:'할 일을 넣을 프로젝트', type:'select', options: projOpts()}
+    ],
+    values: mine ? {name: c.name, team: c.team, due: s.due, projectId: s.t ? s.t.projectId : ''} : {name: me ? me.name : '', team: me ? me.team : TEAMS[0], due: ''},
+    saveLabel: mine ? '저장' : '맡기',
+    onSave: async v => {
+      if (!guard()) throw new Error('수정 권한이 없어요.');
+      if (!isDate(v.due)) throw new Error('마감일을 골라 주세요.');
+      if (v.due < today()) throw new Error('마감일이 오늘보다 앞이에요.');
+      const now = byId('requests', x.id);
+      if (!mine && now && rqState(now).k !== 'open') throw new Error(`방금 ${now.claim.name} 님이 먼저 맡았어요.`);
+      const items = rqItems(x);
+      const task = {title: `작업 요청 · ${x.title}${x.code ? ' (' + x.code + ')' : ''}`, assignee: v.name, due: v.due, projectId: v.projectId, team: v.team};
+      let taskId = s.t ? s.t.id : '';
+      if (taskId) await save('tasks', taskId, task);
+      else {
+        const r = await db.collection('tasks').add({...task, kind: '', status: 'todo', priority: 'mid', start: today(), note: items.join('\n'), by: v.name, createdAt: Date.now(), doneAt: '', cancelAt: '', reqId: x.id}).catch(e => { throw new Error(dbErr(e)); });
+        taskId = r && r.id || '';
+      }
+      await save('requests', x.id, {claim: {name: v.name, team: v.team, due: v.due, at: mine ? (c.at || today()) : today(), taskId}});
+      if (!me) { me = {name: v.name, team: v.team}; store.set('me', JSON.stringify(me)); paintChrome(); }
+      toast(mine ? '저장했어요.' : `${x.title}을(를) ${v.name} 님이 맡았어요. 할 일에도 올렸어요.`);
+    },
+    extras: mine ? [{label: '맡기 취소', cls: 'cancel-btn rq-rel', run: async () => {
+      const b = modal.querySelector('.rq-rel');
+      if (!armed) { armed = true; setTimeout(() => { b.disabled = false; b.textContent = '한 번 더 누르면 맡기 취소'; b.classList.add('armed'); }); return 'keep'; }
+      if (s.t && s.t.status !== 'done') await save('tasks', s.t.id, {status: 'cancel', cancelAt: today()});
+      await save('requests', x.id, {claim: null});
+      toast(`${x.title}을(를) 다시 맡을 사람 구함으로 돌렸어요.`);
+    }}] : []
+  });
+}
+// 첫 시작용: 초원 자연 소품 컨셉 시트 6장 (이미지는 저장소 images/req/)
+const RQ_SEED = [
+  ['나무', 'TR', 'trees', ['묘목','둥근 나무','큰 참나무','뭉게 나무','잎 많은 나무','단풍 나무 (TR04 색 변형)','고목','어린 나무','막대사탕 나무'], '작업량 많음. 잎뭉치 메시 · 텍스처를 만들어 덤불 시트와 공유'],
+  ['덤불', 'SH', 'shrubs', ['구형 덤불 S','구형 덤불 M','구형 덤불 L','열매 덤불','흰 꽃 덤불','노란 꽃 덤불'], '작업량 중간. 나무 시트의 잎뭉치를 같이 쓰면 톤이 맞음'],
+  ['풀 · 꽃', 'GF', 'grass', ['낮은 풀 무더기','둥근 풀 무더기','긴 풀','키 큰 풀','이삭 풀','성긴 이삭 풀','데이지','양귀비','라벤더'], '작업량 중간. 풀은 알파 카드 위주, 꽃 3종은 메시'],
+  ['돌', 'RK', 'rocks', ['덩어리 바위','각진 바위','쌓인 바위','선돌','납작 바위','둥근 바위','이끼 바위 (RK01 변형)','이끼 납작 바위 (RK05 변형)','이끼 수북한 바위'], '작업량 적음. 여기서 만든 돌을 돌 군집 시트에서 재사용'],
+  ['통나무 · 그루터기 · 가지', 'WD', 'wood', ['통나무','부러진 통나무','속 빈 통나무','그루터기','이끼 그루터기 (WD04 변형)','버섯 그루터기 (WD04 변형)','잔가지 더미','갈래 가지','묶은 장작'], '작업량 적음. 나무껍질 질감은 나무 시트와 맞춤'],
+  ['돌 군집', 'RC', 'pebbles', ['둥근 돌','납작 돌','갈색 바위','갈색 돌 무리','둥근 돌 무리','조약돌 흩뿌림','돌무더기','땅에 박힌 돌','돌 고리'], '작업량 적음. 돌 시트가 나오기 전엔 조약돌부터']
+];
+async function seedRequests(){
+  if (!guard() || S.d.requests.length) return;
+  const team = TEAMS.includes('아트팀') ? '아트팀' : COMMON, now = Date.now();
+  try {
+    for (const [i, [title, code, file, names, note]] of RQ_SEED.entries()) {
+      await db.collection('requests').add({title, code: `${code}01~${code}${String(names.length).padStart(2, '0')}`, img: `images/req/${file}.jpg`, items: names.map((nm, j) => `${code}${String(j + 1).padStart(2, '0')} ${nm}`), note: note + '\n바닥(잔디 · 흙 받침)은 만들지 않음', team, order: i + 1, createdAt: now + i, by: me ? me.name : '', claim: null});
+    }
+    toast('초원 소품 시트 6장을 올렸어요.');
+  } catch (e) { toast(dbErr(e)); }
+}
+
 async function saveTeamDoc(members, teams){
   try { await db.doc('settings/team').set({members, teams}); } catch (e) { throw new Error(dbErr(e)); }
 }
@@ -2150,9 +2310,11 @@ async function toggleGoal(g){
 /* ---------- 라이트박스 ---------- */
 const lb = $('#lightbox');
 function openLightbox(blobId, cap, art){
+  // images/로 시작하면 저장소에 같이 올린 파일 (작업 요청 기본 시트)
+  const path = /^images\//.test(blobId || '');
   lb.innerHTML = `<div class="lb-in" role="dialog" aria-modal="true" aria-label="이미지 보기">
-    <img ${blobAttr(blobId, true)} alt="${esc(cap)}">
-    <div class="lb-cap"><span class="t">${esc(cap)}</span>${art ? `<span class="muted">${esc(art.category || '')}${art.version ? ' · ' + esc(art.version) : ''}${art.member ? ' · ' + esc(art.member) : ''}</span>` : ''}<span style="flex:1"></span>${assets ? `<button type="button" class="ghost" data-lb-dl="${esc(blobId)}" data-name="${esc(art ? artFileBase(art) : cap)}">⭳ 다운로드</button>` : ''}${art && canWrite ? `<button type="button" class="ghost" data-lb-edit="${esc(art.id)}">정보 편집</button>` : ''}<button type="button" class="ghost" data-lb-close>닫기</button>${art && art.note ? `<span class="n">${esc(art.note)}</span>` : ''}</div>
+    <img ${path ? `src="${esc(blobId)}"` : blobAttr(blobId, true)} alt="${esc(cap)}">
+    <div class="lb-cap"><span class="t">${esc(cap)}</span>${art ? `<span class="muted">${esc(art.category || '')}${art.version ? ' · ' + esc(art.version) : ''}${art.member ? ' · ' + esc(art.member) : ''}</span>` : ''}<span style="flex:1"></span>${assets && !path ? `<button type="button" class="ghost" data-lb-dl="${esc(blobId)}" data-name="${esc(art ? artFileBase(art) : cap)}">⭳ 다운로드</button>` : ''}${art && canWrite ? `<button type="button" class="ghost" data-lb-edit="${esc(art.id)}">정보 편집</button>` : ''}<button type="button" class="ghost" data-lb-close>닫기</button>${art && art.note ? `<span class="n">${esc(art.note)}</span>` : ''}</div>
   </div>`;
   lb.hidden = false;
   $('[data-lb-close]', lb).focus();
@@ -2251,6 +2413,12 @@ main.addEventListener('click', e => {
     case 'view-art': { const a = byId('art', id); if (a) openLightbox(a.assetId, a.title, a); return; }
     case 'view-img': return openLightbox(el.dataset.src, el.dataset.cap);
     case 'art-cat': S.art.cat = el.dataset.cat; return render();
+    case 'rq-f': S.rq.f = el.dataset.val; return render();
+    case 'rq-new': return needMe(() => reqForm(null));
+    case 'rq-edit': return reqForm(byId('requests', id));
+    case 'rq-claim': { const x = byId('requests', id); return x && claimForm(x); }
+    case 'rq-seed': return seedRequests();
+    case 'rq-view': { const x = byId('requests', id); return x && openLightbox(/^images\//.test(x.img || '') ? x.img : x.imgId, x.title); }
     case 'cal-mode': S.cal.mode = el.dataset.mode; store.set('calMode', S.cal.mode); return render();
     case 'cal-prev': return shiftCal(-1);
     case 'cal-next': return shiftCal(1);
