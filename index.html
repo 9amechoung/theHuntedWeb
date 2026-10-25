@@ -415,8 +415,37 @@ button.trow:hover{background:var(--slate-soft)}
 .shot .cap{padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .shot .cap b{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .shot .cap span{font-size:12px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* 작업 요청: 시트 한 장 = 카드 하나. 누가 먼저 맡으면 이름 · 마감일이 붙음 */
-.rqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;align-items:start}
+/* 작업 요청: 디스코드 포럼처럼 왼쪽 글 목록 · 오른쪽 글 본문. 글 하나에 시트 여러 장, 시트마다 한 사람이 먼저 맡음 */
+.forum{display:grid;grid-template-columns:minmax(260px,340px) minmax(0,1fr);gap:16px;align-items:start}
+.fl{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fi{display:grid;grid-template-columns:minmax(0,1fr) 64px;gap:4px 10px;align-items:start;text-align:left;border:var(--frame);background:var(--panel);padding:10px 12px;min-width:0}
+.fi:hover{background:var(--slate-soft)}
+.fi[aria-current="true"]{box-shadow:4px 4px 0 var(--amber)}
+.fi.hid{border-style:dashed;opacity:.7}
+.fi b{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi .sn{grid-column:1;font-size:12.5px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fi .sn em{font-style:normal;color:var(--green);font-weight:700}
+.fi .ft{grid-column:1;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:12px;color:var(--ink-3)}
+.fi img{grid-column:2;grid-row:1/4;width:64px;height:64px;object-fit:cover;border:1.5px solid var(--ink);background:var(--slate-soft)}
+.fd{border:var(--frame);background:var(--panel);min-width:0;display:flex;flex-direction:column}
+.fd-h{padding:14px 16px;border-bottom:1.5px solid var(--ink);display:flex;flex-direction:column;gap:6px}
+.fd-h h2{margin:0;font-size:22px;font-weight:700;line-height:1.3;text-wrap:balance}
+.fd-m{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px;color:var(--ink-2)}
+.fd-m .by{color:var(--green);font-weight:700}
+.fd-body{margin:0;white-space:pre-wrap;font-size:14px;line-height:1.7}
+.fd-sec{padding:14px 16px;display:flex;flex-direction:column;gap:12px;border-bottom:1.5px solid var(--ink)}
+.fd-sec:last-child{border-bottom:0}
+.fd-sec h3{margin:0;font-size:16px}
+.st.hide{border-style:dashed;color:var(--ink-3)}
+.cms{display:flex;flex-direction:column;gap:10px}
+.cm{display:flex;flex-direction:column;gap:2px}
+.cm-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12.5px}
+.cm-h b{color:var(--green)}
+.cm-h span{color:var(--ink-3)}
+.cm p{margin:0;white-space:pre-wrap;font-size:14px}
+.cmf{border:1.5px solid var(--ink)}
+@media (max-width:860px){.forum{grid-template-columns:minmax(0,1fr)}}
+.rqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;align-items:start}
 .rq{border:var(--frame);background:var(--panel);display:flex;flex-direction:column;min-width:0}
 .rq.open{box-shadow:4px 4px 0 var(--amber)}
 .rq.off{opacity:.8}
@@ -679,7 +708,7 @@ const ART_CATS = ['캐릭터','몬스터','배경','건물','무기','오브젝�
 const PALETTE = ['#2f87d0','#cf3b27','#23804f','#c68a14','#7c5cd6','#0f9aa6','#d0457f','#6b7385'];
 const IMG_TYPES = ['image/png','image/jpeg','image/gif','image/webp'];
 const VIEWS = [['overview','개요'],['calendar','캘린더'],['timeline','타임라인'],['kanban','칸반'],['todo','할 일'],['requests','작업 요청'],['art','아트 바이블'],['reports','작업 보고']];
-const COLS = ['projects','tasks','milestones','events','reports','art','bible','goals','requests'];
+const COLS = ['projects','tasks','milestones','events','reports','art','bible','goals','requests','rqcomments'];
 /* 팀 목록은 settings/team 문서의 teams에 저장 (팀원 명단 창에서 편집). 없으면 기본 3팀 */
 const TEAM_DEFAULT = [{name:'아트팀', color:'var(--green)'}, {name:'프밍팀', color:'var(--blue)'}, {name:'기획팀', color:'var(--violet)'}];
 const TEAM_PAL = ['var(--green)','var(--blue)','var(--violet)','var(--amber)','var(--red)','#0f9aa6','#d0457f','#6b7385','#c68a14','#2f87d0'];
@@ -718,7 +747,7 @@ const S = {
   tl: {anchor: today(), team: '', hideDone: false, mode: ['all','pday','pweek'].includes(store.get('tlMode')) ? store.get('tlMode') : 'all', busy: false},
   kb: {project: '', who: '', team: ''},
   art: {cat: ''},
-  rq: {f: ''},
+  rq: {f: '', sel: ''},
   rep: {who: '', project: '', team: ''}
 };
 let db = null, assets = null, canWrite = false, myId = null;
@@ -1544,47 +1573,83 @@ V.art = () => {
   ${selBar([...secs.map(s => 'bible:' + s.id), ...imgs.map(x => 'art:' + x.id)])}`;
 };
 
-/* 작업 요청: 시트 하나를 한 사람이 먼저 맡고 마감일을 정함. 맡으면 할 일(tasks)이 같이 생겨서 캘린더 · 타임라인에도 뜸 */
+/* 작업 요청: 글(요청) 하나에 시트 여러 장. 시트마다 한 사람이 먼저 맡고 마감일을 정함 → 할 일(tasks)이 같이 생겨 캘린더 · 타임라인에도 뜸
+   숨긴 글(hidden)은 관리자 계정에만 보임. 보이기로 바꾸면 팀 전체에 공개되는 요청 */
 const rqImg = (x, full) => /^images\//.test(x.img || '') ? `src="${esc(x.img)}"` : x.imgId ? blobAttr(x.imgId, full) : `src="${PIXEL}"`;
 const rqItems = x => (Array.isArray(x.items) ? x.items : String(x.items || '').split('\n')).map(s => String(s).trim()).filter(Boolean);
-// 맡은 상태: 연결된 할 일이 파기되거나 지워지면 다시 '맡을 사람 구함'으로 돌아감
-function rqState(x){
-  if (!x.claim || !x.claim.name) return {k: 'open'};
-  const t = x.claim.taskId ? byId('tasks', x.claim.taskId) : null;
-  if (!t && !loading('tasks') && x.claim.taskId) return {k: 'open'};
+const isPost = x => Array.isArray(x.sheets);
+const rqPosts = () => S.d.requests.filter(x => isPost(x) && (isAdmin || !x.hidden)).sort((a, b) => (b.createdAt||0) - (a.createdAt||0));
+const rqCms = id => S.d.rqcomments.filter(c => c.postId === id).sort((a, b) => (a.createdAt||0) - (b.createdAt||0));
+const ago = ts => { const m = Math.round((Date.now() - (ts || 0)) / 60000); return m < 1 ? '방금' : m < 60 ? `${m}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
+// 시트를 맡은 상태: 연결된 할 일이 파기되거나 지워지면 다시 '맡을 사람 구함'으로 돌아감
+function rqState(p, key){
+  const c = (p.claims || {})[key];
+  if (!c || !c.name) return {k: 'open'};
+  const t = c.taskId ? byId('tasks', c.taskId) : null;
+  if (!t && !loading('tasks') && c.taskId) return {k: 'open'};
   if (t && t.status === 'cancel') return {k: 'open'};
-  return {k: t && t.status === 'done' ? 'done' : 'taken', t, due: (t && t.due) || x.claim.due};
+  return {k: t && t.status === 'done' ? 'done' : 'taken', t, c, due: (t && t.due) || c.due};
+}
+const rqSheet = (p, key) => (p.sheets || []).find(s => s.key === key);
+function sheetCard(p, sh){
+  const s = rqState(p, sh.key), items = rqItems(sh), c = s.c || {}, a = `data-id="${esc(p.id)}" data-key="${esc(sh.key)}"`;
+  const left = s.due ? diff(today(), s.due) : null;
+  const stat = s.k === 'open' ? `<span class="st wait">맡을 사람 구함</span>`
+    : `<span class="st ${s.k === 'done' ? 'done' : 'doing'}">${s.k === 'done' ? '완료' : '진행 중'}</span><b>${esc(c.name)}</b>${tchip(c.team)}${s.due ? `<span class="due ${s.k !== 'done' && left < 0 ? 'late' : ''}">~${short(s.due)}${s.k !== 'done' ? (left < 0 ? ` (${-left}일 지남)` : left === 0 ? ' (오늘)' : ` (D-${left})`) : ''}</span>` : ''}${s.t ? extTag(s.t) : ''}`;
+  const btns = s.k === 'open'
+    ? (canWrite ? `<button type="button" class="primary" data-act="rq-claim" ${a}>내가 할게요</button>` : '')
+    : `${s.t ? `<button type="button" class="ghost" data-act="edit-task" data-id="${esc(s.t.id)}">할 일 보기</button>` : ''}${canWrite && s.k !== 'done' ? `<button type="button" class="ghost" data-act="rq-claim" ${a}>마감일 · 담당 바꾸기</button>` : ''}`;
+  return `<article class="rq ${s.k === 'open' ? 'open' : s.k === 'done' ? 'off' : ''}">
+    <button type="button" class="im" data-act="rq-view" ${a} aria-label="${esc(sh.title)} 크게 보기"><img ${rqImg(sh)} alt="${esc(sh.title)} 컨셉 시트" loading="lazy"></button>
+    <div class="rq-b">
+      <div class="rq-h"><h3>${esc(sh.title)}</h3><span class="cnt">${items.length}종${sh.code ? ' · ' + esc(sh.code) : ''}</span><span class="sp"></span>${canWrite ? `<button type="button" class="linkbtn" data-act="rq-sheet" ${a}>편집</button>` : ''}</div>
+      <div class="rq-st">${stat}</div>
+      ${sh.note ? `<div class="note">${esc(sh.note)}</div>` : ''}
+      ${items.length ? `<details><summary>소품 목록 ${items.length}종</summary><ol>${items.map(t => { const m = /^([A-Z]{1,4}\d{1,3})\s+(.*)$/.exec(t); return `<li>${m ? `<b>${esc(m[1])}</b><span>${esc(m[2])}</span>` : esc(t)}</li>`; }).join('')}</ol></details>` : ''}
+      ${btns ? `<div class="rq-f">${btns}</div>` : ''}
+    </div>
+  </article>`;
 }
 V.requests = () => {
-  const all = [...S.d.requests].sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || (a.createdAt||0) - (b.createdAt||0));
-  const st = Object.fromEntries(all.map(x => [x.id, rqState(x)]));
-  const n = k => all.filter(x => st[x.id].k === k).length;
-  const f = S.rq.f, list = all.filter(x => !f || st[x.id].k === f);
-  const chip = (v, l, c) => `<button type="button" class="chip" data-act="rq-f" data-val="${v}" aria-pressed="${f === v}">${l}<span class="n">${c}</span></button>`;
-  const card = x => {
-    const s = st[x.id], items = rqItems(x), c = x.claim || {};
-    const left = s.due ? diff(today(), s.due) : null;
-    const stat = s.k === 'open' ? `<span class="st wait">맡을 사람 구함</span>`
-      : `<span class="st ${s.k === 'done' ? 'done' : 'doing'}">${s.k === 'done' ? '완료' : '진행 중'}</span><b>${esc(c.name)}</b>${tchip(c.team)}${s.due ? `<span class="due ${s.k !== 'done' && left < 0 ? 'late' : ''}">~${short(s.due)}${s.k !== 'done' ? (left < 0 ? ` (${-left}일 지남)` : left === 0 ? ' (오늘)' : ` (D-${left})`) : ''}</span>` : ''}${s.t ? extTag(s.t) : ''}`;
-    const btns = s.k === 'open'
-      ? (canWrite ? `<button type="button" class="primary" data-act="rq-claim" data-id="${esc(x.id)}">내가 할게요</button>` : '')
-      : `${s.t ? `<button type="button" class="ghost" data-act="edit-task" data-id="${esc(s.t.id)}">할 일 보기</button>` : ''}${canWrite && s.k !== 'done' ? `<button type="button" class="ghost" data-act="rq-claim" data-id="${esc(x.id)}">마감일 · 담당 바꾸기</button>` : ''}`;
-    return `<article class="rq ${s.k === 'open' ? 'open' : s.k === 'done' ? 'off' : ''}">
-      <button type="button" class="im" data-act="rq-view" data-id="${esc(x.id)}" aria-label="${esc(x.title)} 크게 보기"><img ${rqImg(x)} alt="${esc(x.title)} 컨셉 시트" loading="lazy"></button>
-      <div class="rq-b">
-        <div class="rq-h"><h3>${esc(x.title)}</h3><span class="cnt">${items.length}종${x.code ? ' · ' + esc(x.code) : ''}</span><span class="sp"></span>${canWrite ? `<button type="button" class="linkbtn" data-act="rq-edit" data-id="${esc(x.id)}">편집</button>` : ''}</div>
-        <div class="rq-st">${stat}</div>
-        ${x.note ? `<div class="note">${esc(x.note)}</div>` : ''}
-        ${items.length ? `<details><summary>소품 목록 ${items.length}종</summary><ol>${items.map(s => { const m = /^([A-Z]{1,4}\d{1,3})\s+(.*)$/.exec(s); return `<li>${m ? `<b>${esc(m[1])}</b><span>${esc(m[2])}</span>` : esc(s)}</li>`; }).join('')}</ol></details>` : ''}
-        ${btns ? `<div class="rq-f">${btns}</div>` : ''}
-      </div>
-    </article>`;
+  const posts = rqPosts(), legacy = S.d.requests.filter(x => !isPost(x));
+  const p = posts.find(x => x.id === S.rq.sel) || posts[0];
+  const item = x => {
+    const sh = x.sheets || [], taken = sh.filter(s => rqState(x, s.key).k !== 'open').length, first = sh.find(s => s.img || s.imgId);
+    const line = String(x.body || '').split('\n').find(Boolean) || '';
+    return `<button type="button" class="fi ${x.hidden ? 'hid' : ''}" data-act="rq-open" data-id="${esc(x.id)}" aria-current="${!!p && p.id === x.id}">
+      <b>${x.hidden ? '<span class="st hide">숨김</span> ' : ''}${esc(x.title)}</b>
+      <span class="sn">${x.by ? `<em>${esc(x.by)}${x.team ? '/' + esc(x.team) : ''}:</em> ` : ''}${esc(line)}</span>
+      <span class="ft"><span>맡음 ${taken}/${sh.length}</span><span>댓글 ${rqCms(x.id).length}</span><span>${ago(x.createdAt)}</span></span>
+      ${first ? `<img ${rqImg(first)} alt="" loading="lazy">` : ''}
+    </button>`;
   };
+  let detail = '';
+  if (p) {
+    const sh = p.sheets || [], st = Object.fromEntries(sh.map(s => [s.key, rqState(p, s.key).k])), f = S.rq.f;
+    const n = k => sh.filter(s => st[s.key] === k).length, list = sh.filter(s => !f || st[s.key] === f);
+    const chip = (v, l, c) => `<button type="button" class="chip" data-act="rq-f" data-val="${v}" aria-pressed="${f === v}">${l}<span class="n">${c}</span></button>`;
+    const cms = rqCms(p.id);
+    detail = `<article class="fd" id="rqDetail">
+      <div class="fd-h">
+        <div class="bar"><h2>${esc(p.title)}</h2><span class="sp"></span>${isAdmin ? `<button type="button" class="ghost" data-act="rq-hide" data-id="${esc(p.id)}">${p.hidden ? '보이기' : '숨기기'}</button>` : ''}${canWrite ? `<button type="button" class="linkbtn" data-act="rq-edit" data-id="${esc(p.id)}">편집</button>` : ''}</div>
+        <div class="fd-m">${p.hidden ? '<span class="st hide">숨김 · 관리자만 보임</span>' : ''}${p.by ? `<span class="by">${esc(p.by)}</span>` : ''}${tchip(p.team)}<span>${ago(p.createdAt)}</span><span>시트 ${sh.length}장 · ${n('open')}장 남음</span></div>
+        ${p.body ? `<p class="fd-body">${esc(p.body)}</p>` : ''}
+      </div>
+      <section class="fd-sec">
+        <div class="bar"><h3>시트</h3><span class="muted" style="font-size:13px">하고 싶은 시트를 먼저 누른 사람이 맡아요. 맡은 시트는 이미지 안에 있는 걸 전부 만들어요.</span><span class="sp"></span>${canWrite ? `<button type="button" class="ghost" data-act="rq-sheet" data-id="${esc(p.id)}">+ 시트 추가</button>` : ''}</div>
+        ${sh.length ? `<div class="chips" role="group" aria-label="상태">${chip('', '전체', sh.length)}${chip('open', '맡을 사람 구함', n('open'))}${chip('taken', '진행 중', n('taken'))}${chip('done', '완료', n('done'))}</div>` : ''}
+        ${list.length ? `<div class="rqgrid">${list.map(s => sheetCard(p, s)).join('')}</div>` : `<p class="empty">${sh.length ? '이 상태인 시트가 없어요.' : '시트가 없어요. <b>+ 시트 추가</b>로 컨셉 시트와 소품 목록을 올리세요.'}</p>`}
+      </section>
+      <section class="fd-sec">
+        <h3>댓글 <span class="muted num">${cms.length}</span></h3>
+        ${cms.length ? `<div class="cms">${cms.map(c => `<div class="cm"><div class="cm-h"><b>${esc(c.name)}</b>${tchip(c.team)}<span>${ago(c.createdAt)}</span></div><p>${esc(c.text)}</p></div>`).join('')}</div>` : '<p class="muted" style="margin:0">아직 댓글이 없어요. 질문이나 "확인했습니다"를 남겨 주세요.</p>'}
+        ${canWrite ? `<form class="qa cmf" data-cm="${esc(p.id)}"><input id="cm-${esc(p.id)}" placeholder="댓글 쓰고 Enter" aria-label="댓글" autocomplete="off"><button type="submit">보내기</button></form>` : ''}
+      </section>
+    </article>`;
+  }
   return `
-  <div class="bar"><h1 class="vtitle">작업 요청</h1><span class="muted num">${all.length}건 · ${n('open')}건 남음</span><span class="sp"></span>${canWrite && !all.length && !loading('requests') ? `<button type="button" class="ghost" data-act="rq-seed">초원 소품 6장 넣기</button>` : ''}${addBtn('rq-new', '+ 작업 요청')}</div>
-  <p class="muted" style="margin:0">하고 싶은 시트를 먼저 누른 사람이 맡아요. <b>내가 할게요</b>를 누르고 언제까지 할 수 있는지 정하면 할 일 · 캘린더 · 타임라인에 같이 올라가요. 맡은 시트는 이미지 안에 있는 걸 전부 만들어요.</p>
-  ${all.length ? `<div class="chips" role="group" aria-label="상태">${chip('', '전체', all.length)}${chip('open', '맡을 사람 구함', n('open'))}${chip('taken', '진행 중', n('taken'))}${chip('done', '완료', n('done'))}</div>` : ''}
-  ${list.length ? `<div class="rqgrid">${list.map(card).join('')}</div>` : `<div class="panel">${emptyMsg('requests', all.length ? '이 상태인 요청이 없어요.' : '작업 요청이 없어요. <b>+ 작업 요청</b>으로 컨셉 시트와 소품 목록을 올리면 팀원이 골라서 맡을 수 있어요.')}</div>`}`;
+  <div class="bar"><h1 class="vtitle">작업 요청</h1><span class="muted num">${posts.length}건</span><span class="sp"></span>${canWrite && legacy.length ? `<button type="button" class="ghost" data-act="rq-merge">시트 ${legacy.length}장을 글 하나로 합치기</button>` : ''}${canWrite && !S.d.requests.length && !loading('requests') ? `<button type="button" class="ghost" data-act="rq-seed">초원 소품 요청 넣기</button>` : ''}${addBtn('rq-new', '+ 새 요청')}</div>
+  ${posts.length ? `<div class="forum"><nav class="fl" aria-label="요청 목록">${posts.map(item).join('')}</nav>${detail}</div>` : `<div class="panel">${emptyMsg('requests', legacy.length ? '예전 형식의 시트가 있어요. 위의 <b>글 하나로 합치기</b>를 눌러 주세요.' : '작업 요청이 없어요. <b>+ 새 요청</b>으로 글을 쓰고 시트를 올리면 팀원이 골라서 맡을 수 있어요.')}</div>`}`;
 };
 
 V.reports = () => {
@@ -2006,40 +2071,81 @@ function artForm(files, x){
 }
 const teamList = () => TEAMS.map(n => ({name: n, color: TEAM_C[n]}));
 /* ---------- 작업 요청 ---------- */
-function reqForm(x){
+const rqKey = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+function postForm(p){
   if (!guard()) return;
   openForm({
-    title: x ? '작업 요청 편집' : '새 작업 요청',
+    title: p ? '요청 편집' : '새 작업 요청',
+    lead: p ? '' : `<p>글을 올린 뒤 <b>+ 시트 추가</b>로 컨셉 시트를 넣어요.${isAdmin ? ' 숨김으로 두면 관리자만 보여요.' : ''}</p>`,
     fields: [
-      {key:'title', label:'제목', required:true, ph:'예: 나무'},
-      {key:'code', label:'ID 범위', ph:'예: TR01~TR09'},
-      {key:'imgs', label:'컨셉 시트 이미지', type:'images', hint:'한 장'},
-      {key:'items', label:'소품 목록', type:'textarea', ph:'한 줄에 하나 · 예: TR01 묘목'},
-      {key:'note', label:'메모', type:'textarea', ph:'예: 잎뭉치를 만들어 덤불과 공유'},
-      {key:'team', label:'팀', type:'select', options: workTeamOpts()},
-      {key:'order', label:'순서', type:'number', hint:'작을수록 앞'}
+      {key:'title', label:'제목', wide:true, required:true, ph:'예: 초원 자연 소품 모델링 요청'},
+      {key:'body', label:'내용', type:'textarea', ph:'작업 방법, 규칙, 참고 사항'},
+      ...authorFields(),
+      ...(isAdmin ? [{key:'hidden', label:'공개', type:'select', options: [['1', '숨김 (관리자만 보임)'], ['', '보이기 (팀 전체)']]}] : [])
     ],
-    values: x ? {...x, items: rqItems(x).join('\n'), imgs: x.imgId ? [x.imgId] : []} : {team: TEAMS.includes('아트팀') ? '아트팀' : COMMON, order: S.d.requests.length + 1},
-    saveLabel: x ? '저장' : '추가',
+    values: {...(p ? {...p, hidden: p.hidden ? '1' : ''} : {hidden: '1'}), ...authorVals(p)},
+    saveLabel: p ? '저장' : '올리기',
+    onSave: async v => {
+      if (!guard()) throw new Error('수정 권한이 없어요.');
+      const data = {title: v.title, body: v.body, by: v.by, team: v.team};
+      if (isAdmin) data.hidden = !!v.hidden;
+      if (p) await save('requests', p.id, data);
+      else {
+        const r = await db.collection('requests').add({...data, createdAt: Date.now(), sheets: [], claims: {}, hidden: isAdmin && !!v.hidden}).catch(e => { throw new Error(dbErr(e)); });
+        if (r && r.id) S.rq.sel = r.id;
+      }
+      toast(p ? '저장했어요.' : '요청을 올렸어요. 이제 시트를 추가하세요.');
+    },
+    onDelete: p ? async () => {
+      await remove('requests', p.id);
+      const imgs = (p.sheets || []).map(s => s.imgId).filter(Boolean);
+      if (imgs.length) dropAssets(imgs);
+      for (const c of rqCms(p.id)) await remove('rqcomments', c.id);
+    } : null
+  });
+}
+async function toggleHide(p){
+  if (!isAdmin) return toast('숨기기 · 보이기는 관리자만 바꿀 수 있어요.');
+  if (!guard()) return;
+  try { await save('requests', p.id, {hidden: !p.hidden}); toast(p.hidden ? '팀 전체에 보이게 했어요.' : '숨겼어요. 관리자만 보여요.'); }
+  catch (x) { toast(x.message); }
+}
+function sheetForm(p, sh){
+  if (!guard()) return;
+  openForm({
+    title: sh ? `${sh.title} 편집` : `${p.title} · 시트 추가`,
+    fields: [
+      {key:'title', label:'시트 이름', required:true, ph:'예: 나무'},
+      {key:'code', label:'ID 범위', ph:'예: TR01~TR09'},
+      {key:'imgs', label:'컨셉 시트 이미지', type:'images', hint:'한 장. 비우면 지금 이미지 유지'},
+      {key:'items', label:'소품 목록', type:'textarea', ph:'한 줄에 하나 · 예: TR01 묘목'},
+      {key:'note', label:'메모', type:'textarea', ph:'예: 작업량 많음. 잎뭉치를 덤불과 공유'}
+    ],
+    values: sh ? {...sh, items: rqItems(sh).join('\n'), imgs: sh.imgId ? [sh.imgId] : []} : {},
+    saveLabel: sh ? '저장' : '추가',
     onSave: async v => {
       if (!guard()) throw new Error('수정 권한이 없어요.');
       const ids = await uploadFiles(v.imgs.files.slice(0, 1));
       const imgId = ids[0] || v.imgs.keep[0] || '';
-      const data = {title: v.title, code: v.code, items: v.items.split('\n').map(s => s.trim()).filter(Boolean), note: v.note, team: v.team, order: v.order === '' ? 99 : +v.order};
-      if (imgId) { data.imgId = imgId; data.img = ''; }
-      else if (x && x.imgId) data.imgId = '';
-      if (!x) Object.assign(data, {createdAt: Date.now(), by: me ? me.name : '', claim: null});
-      await save('requests', x && x.id, data);
-      if (x && x.imgId && x.imgId !== imgId) dropAssets([x.imgId]);
-      toast(x ? '저장했어요.' : '작업 요청을 올렸어요.');
+      // 저장소 기본 이미지(images/...)는 새 이미지를 올리지 않는 한 그대로 둠
+      const next = {key: sh ? sh.key : rqKey(), title: v.title, code: v.code, items: v.items.split('\n').map(t => t.trim()).filter(Boolean), note: v.note, imgId, img: imgId ? '' : (sh && sh.img) || ''};
+      const cur = (byId('requests', p.id) || p).sheets || [];
+      await save('requests', p.id, {sheets: sh ? cur.map(s => s.key === sh.key ? next : s) : [...cur, next]});
+      if (sh && sh.imgId && sh.imgId !== imgId) dropAssets([sh.imgId]);
+      toast(sh ? '저장했어요.' : '시트를 추가했어요.');
     },
-    onDelete: x ? async () => { await remove('requests', x.id); if (x.imgId) dropAssets([x.imgId]); } : null
+    onDelete: sh ? async () => {
+      const cur = (byId('requests', p.id) || p).sheets || [];
+      await save('requests', p.id, {sheets: cur.filter(s => s.key !== sh.key), ['claims.' + sh.key]: null});
+      if (sh.imgId) dropAssets([sh.imgId]);
+    } : null
   });
 }
-// 맡기: 이름 · 언제까지 → 할 일을 만들고 요청에 연결. 이미 맡은 요청이면 마감일 · 담당만 바꿈
-function claimForm(x){
+// 맡기: 이름 · 언제까지 → 할 일을 만들고 시트에 연결. 이미 맡은 시트면 마감일 · 담당만 바꿈
+// claims.<시트키> 한 칸만 고쳐서, 두 사람이 다른 시트를 동시에 맡아도 서로 덮어쓰지 않음
+function claimForm(p, sh){
   if (!guard()) return;
-  const s = rqState(x), mine = s.k !== 'open', c = mine ? x.claim : {};
+  const x = sh, s = rqState(p, sh.key), mine = s.k !== 'open', c = mine ? s.c : {};
   let armed = false;
   openForm({
     title: mine ? `${x.title} · 맡은 내용 바꾸기` : `${x.title} 맡기`,
@@ -2056,17 +2162,17 @@ function claimForm(x){
       if (!guard()) throw new Error('수정 권한이 없어요.');
       if (!isDate(v.due)) throw new Error('마감일을 골라 주세요.');
       if (v.due < today()) throw new Error('마감일이 오늘보다 앞이에요.');
-      const now = byId('requests', x.id);
-      if (!mine && now && rqState(now).k !== 'open') throw new Error(`방금 ${now.claim.name} 님이 먼저 맡았어요.`);
+      const now = byId('requests', p.id);
+      if (!mine && now && rqState(now, sh.key).k !== 'open') throw new Error(`방금 ${now.claims[sh.key].name} 님이 먼저 맡았어요.`);
       const items = rqItems(x);
-      const task = {title: `작업 요청 · ${x.title}${x.code ? ' (' + x.code + ')' : ''}`, assignee: v.name, due: v.due, projectId: v.projectId, team: v.team};
+      const task = {title: `${p.title} · ${x.title}${x.code ? ' (' + x.code + ')' : ''}`, assignee: v.name, due: v.due, projectId: v.projectId, team: v.team};
       let taskId = s.t ? s.t.id : '';
       if (taskId) await save('tasks', taskId, task);
       else {
-        const r = await db.collection('tasks').add({...task, kind: '', status: 'todo', priority: 'mid', start: today(), note: items.join('\n'), by: v.name, createdAt: Date.now(), doneAt: '', cancelAt: '', reqId: x.id}).catch(e => { throw new Error(dbErr(e)); });
+        const r = await db.collection('tasks').add({...task, kind: '', status: 'todo', priority: 'mid', start: today(), note: items.join('\n'), by: v.name, createdAt: Date.now(), doneAt: '', cancelAt: '', reqId: p.id}).catch(e => { throw new Error(dbErr(e)); });
         taskId = r && r.id || '';
       }
-      await save('requests', x.id, {claim: {name: v.name, team: v.team, due: v.due, at: mine ? (c.at || today()) : today(), taskId}});
+      await save('requests', p.id, {['claims.' + sh.key]: {name: v.name, team: v.team, due: v.due, at: mine ? (c.at || today()) : today(), taskId}});
       if (!me) { me = {name: v.name, team: v.team}; store.set('me', JSON.stringify(me)); paintChrome(); }
       toast(mine ? '저장했어요.' : `${x.title}을(를) ${v.name} 님이 맡았어요. 할 일에도 올렸어요.`);
     },
@@ -2074,7 +2180,7 @@ function claimForm(x){
       const b = modal.querySelector('.rq-rel');
       if (!armed) { armed = true; setTimeout(() => { b.disabled = false; b.textContent = '한 번 더 누르면 맡기 취소'; b.classList.add('armed'); }); return 'keep'; }
       if (s.t && s.t.status !== 'done') await save('tasks', s.t.id, {status: 'cancel', cancelAt: today()});
-      await save('requests', x.id, {claim: null});
+      await save('requests', p.id, {['claims.' + sh.key]: null});
       toast(`${x.title}을(를) 다시 맡을 사람 구함으로 돌렸어요.`);
     }}] : []
   });
@@ -2088,15 +2194,42 @@ const RQ_SEED = [
   ['통나무 · 그루터기 · 가지', 'WD', 'wood', ['통나무','부러진 통나무','속 빈 통나무','그루터기','이끼 그루터기 (WD04 변형)','버섯 그루터기 (WD04 변형)','잔가지 더미','갈래 가지','묶은 장작'], '작업량 적음. 나무껍질 질감은 나무 시트와 맞춤'],
   ['돌 군집', 'RC', 'pebbles', ['둥근 돌','납작 돌','갈색 바위','갈색 돌 무리','둥근 돌 무리','조약돌 흩뿌림','돌무더기','땅에 박힌 돌','돌 고리'], '작업량 적음. 돌 시트가 나오기 전엔 조약돌부터']
 ];
+const RQ_SEED_BODY = `초원 필드 자연 소품 51종입니다.
+시트 하나를 골라서 이미지 안에 있는 걸 전부 만들어 주세요. 한 시트는 한 사람이 끝까지 맡아요.
+바닥(잔디 · 흙 받침)은 만들지 않아요. 소품 본체만.
+
+텍스처: Substance Painter + 공유 Stylized 팩. 어울리면 어느 팩이든 OK, 기준은 예쁜지.
+채널: Base Color 위주 · Roughness 0.75~0.95 · Metallic 0 · Normal 약하게
+질문 · 검수 때는 소품 ID로 불러 주세요 (예: TR03, RC07).`;
+const seedSheets = () => RQ_SEED.map(([title, code, file, names, note]) => ({key: file, title, code: `${code}01~${code}${String(names.length).padStart(2, '0')}`, img: `images/req/${file}.jpg`, imgId: '', items: names.map((nm, j) => `${code}${String(j + 1).padStart(2, '0')} ${nm}`), note}));
+const seedPost = (sheets, claims = {}) => ({title: '초원 자연 소품 모델링 요청', body: RQ_SEED_BODY, by: me ? me.name : '', team: TEAMS.includes('아트팀') ? '아트팀' : COMMON, createdAt: Date.now(), sheets, claims, hidden: isAdmin});
 async function seedRequests(){
   if (!guard() || S.d.requests.length) return;
-  const team = TEAMS.includes('아트팀') ? '아트팀' : COMMON, now = Date.now();
   try {
-    for (const [i, [title, code, file, names, note]] of RQ_SEED.entries()) {
-      await db.collection('requests').add({title, code: `${code}01~${code}${String(names.length).padStart(2, '0')}`, img: `images/req/${file}.jpg`, items: names.map((nm, j) => `${code}${String(j + 1).padStart(2, '0')} ${nm}`), note: note + '\n바닥(잔디 · 흙 받침)은 만들지 않음', team, order: i + 1, createdAt: now + i, by: me ? me.name : '', claim: null});
-    }
-    toast('초원 소품 시트 6장을 올렸어요.');
+    const r = await db.collection('requests').add(seedPost(seedSheets()));
+    if (r && r.id) S.rq.sel = r.id;
+    toast(isAdmin ? '초원 소품 요청을 숨김으로 올렸어요. 준비되면 보이기를 누르세요.' : '초원 소품 요청을 올렸어요.');
   } catch (e) { toast(dbErr(e)); }
+}
+// 예전 형식(시트 한 장 = 요청 하나)을 글 하나로 합침. 맡은 사람 · 마감일은 그대로 옮김
+async function mergeLegacy(){
+  if (!guard()) return;
+  const old = S.d.requests.filter(x => !isPost(x)).sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || (a.createdAt||0) - (b.createdAt||0));
+  if (!old.length) return;
+  const seedNote = Object.fromEntries(RQ_SEED.map(r => [r[2], r[4]]));
+  const claims = {};
+  const sheets = old.map(x => {
+    const file = (/^images\/req\/([a-z]+)\.jpg$/.exec(x.img || '') || [])[1];
+    const key = file || 'o' + x.id;
+    if (x.claim && x.claim.name) claims[key] = x.claim;
+    return {key, title: x.title, code: x.code || '', img: x.img || '', imgId: x.imgId || '', items: rqItems(x), note: (file && seedNote[file]) || String(x.note || '').replace(/\n?바닥\(잔디 · 흙 받침\)은 만들지 않음/, '')};
+  });
+  try {
+    const r = await db.collection('requests').add(seedPost(sheets, claims)).catch(e => { throw new Error(dbErr(e)); });
+    for (const x of old) await remove('requests', x.id);
+    if (r && r.id) S.rq.sel = r.id;
+    toast(`시트 ${old.length}장을 글 하나로 합쳤어요.${isAdmin ? ' 지금은 숨김 상태예요. 준비되면 보이기를 누르세요.' : ''}`);
+  } catch (e) { toast(e.message); }
 }
 
 async function saveTeamDoc(members, teams){
@@ -2414,11 +2547,15 @@ main.addEventListener('click', e => {
     case 'view-img': return openLightbox(el.dataset.src, el.dataset.cap);
     case 'art-cat': S.art.cat = el.dataset.cat; return render();
     case 'rq-f': S.rq.f = el.dataset.val; return render();
-    case 'rq-new': return needMe(() => reqForm(null));
-    case 'rq-edit': return reqForm(byId('requests', id));
-    case 'rq-claim': { const x = byId('requests', id); return x && claimForm(x); }
+    case 'rq-open': S.rq.sel = id; S.rq.f = ''; render(); if (matchMedia('(max-width:860px)').matches) requestAnimationFrame(() => document.getElementById('rqDetail')?.scrollIntoView({block:'start'})); return;
+    case 'rq-new': return needMe(() => postForm(null));
+    case 'rq-edit': return postForm(byId('requests', id));
+    case 'rq-hide': { const p = byId('requests', id); return p && toggleHide(p); }
+    case 'rq-sheet': { const p = byId('requests', id); return p && sheetForm(p, el.dataset.key ? rqSheet(p, el.dataset.key) : null); }
+    case 'rq-claim': { const p = byId('requests', id), sh = p && rqSheet(p, el.dataset.key); return sh && claimForm(p, sh); }
     case 'rq-seed': return seedRequests();
-    case 'rq-view': { const x = byId('requests', id); return x && openLightbox(/^images\//.test(x.img || '') ? x.img : x.imgId, x.title); }
+    case 'rq-merge': return mergeLegacy();
+    case 'rq-view': { const p = byId('requests', id), sh = p && rqSheet(p, el.dataset.key); return sh && openLightbox(/^images\//.test(sh.img || '') ? sh.img : sh.imgId, sh.title); }
     case 'cal-mode': S.cal.mode = el.dataset.mode; store.set('calMode', S.cal.mode); return render();
     case 'cal-prev': return shiftCal(-1);
     case 'cal-next': return shiftCal(1);
@@ -2465,6 +2602,19 @@ main.addEventListener('change', async e => {
   }
 });
 main.addEventListener('submit', e => {
+  // 작업 요청 댓글
+  const cf = e.target.closest('[data-cm]');
+  if (cf) {
+    e.preventDefault();
+    const inp = cf.querySelector('input'), text = inp.value.trim();
+    if (!text) return;
+    needMe(async () => {
+      inp.value = '';
+      try { await save('rqcomments', null, {postId: cf.dataset.cm, text, name: me.name, team: me.team, createdAt: Date.now()}); }
+      catch (x) { inp.value = text; toast(x.message); }
+    });
+    return;
+  }
   const f = e.target.closest('[data-qa],[data-goal-add]');
   if (!f) return;
   e.preventDefault();
